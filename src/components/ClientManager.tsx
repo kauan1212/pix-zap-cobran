@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PlusCircle, Users, Phone, Mail, FileText, Pencil, Trash2 } from 'lucide-react';
+import { PlusCircle, Users, ExternalLink, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Client {
@@ -15,9 +17,9 @@ interface Client {
   name: string;
   email: string;
   phone: string;
-  document: string;
-  address?: string;
-  createdAt: string;
+  cpf_cnpj: string;
+  address: string;
+  created_at: string;
 }
 
 interface ClientManagerProps {
@@ -28,86 +30,70 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    document: '',
+    cpf_cnpj: '',
     address: '',
   });
 
   useEffect(() => {
-    loadClients();
+    if (user) {
+      loadClients();
+    }
   }, [user]);
 
-  const loadClients = () => {
-    if (user) {
-      const userClients = JSON.parse(localStorage.getItem(`clients_${user.id}`) || '[]');
-      setClients(userClients);
+  const loadClients = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Erro ao carregar clientes",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setClients(data || []);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) return;
 
-    const clientData: Client = {
-      id: editingClient?.id || Date.now().toString(),
-      ...formData,
-      createdAt: editingClient?.createdAt || new Date().toISOString(),
-    };
+    const { data, error } = await supabase
+      .from('clients')
+      .insert([
+        {
+          ...formData,
+          user_id: user.id,
+        }
+      ])
+      .select()
+      .single();
 
-    let updatedClients;
-    if (editingClient) {
-      updatedClients = clients.map(client => 
-        client.id === editingClient.id ? clientData : client
-      );
+    if (error) {
       toast({
-        title: "Cliente atualizado!",
-        description: `${clientData.name} foi atualizado com sucesso.`,
+        title: "Erro ao criar cliente",
+        description: error.message,
+        variant: "destructive",
       });
     } else {
-      updatedClients = [...clients, clientData];
       toast({
-        title: "Cliente cadastrado!",
-        description: `${clientData.name} foi adicionado com sucesso.`,
+        title: "Cliente criado!",
+        description: `Cliente ${formData.name} foi criado com sucesso.`,
       });
-    }
-
-    localStorage.setItem(`clients_${user.id}`, JSON.stringify(updatedClients));
-    setClients(updatedClients);
-    resetForm();
-    setIsDialogOpen(false);
-    onDataChange();
-  };
-
-  const handleEdit = (client: Client) => {
-    setEditingClient(client);
-    setFormData({
-      name: client.name,
-      email: client.email,
-      phone: client.phone,
-      document: client.document,
-      address: client.address || '',
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = (clientId: string) => {
-    if (!user) return;
-    
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
-      const updatedClients = clients.filter(client => client.id !== clientId);
-      localStorage.setItem(`clients_${user.id}`, JSON.stringify(updatedClients));
-      setClients(updatedClients);
+      resetForm();
+      setIsDialogOpen(false);
+      loadClients();
       onDataChange();
-      
-      toast({
-        title: "Cliente excluído",
-        description: "Cliente foi removido com sucesso.",
-      });
     }
   };
 
@@ -116,23 +102,54 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
       name: '',
       email: '',
       phone: '',
-      document: '',
+      cpf_cnpj: '',
       address: '',
     });
-    setEditingClient(null);
   };
 
-  const formatDocument = (doc: string) => {
-    if (doc.length === 11) {
-      return doc.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    } else if (doc.length === 14) {
-      return doc.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+  const generateClientPortalLink = async (clientId: string) => {
+    const { data, error } = await supabase
+      .from('client_access_tokens')
+      .select('token')
+      .eq('client_id', clientId)
+      .single();
+
+    if (error) {
+      toast({
+        title: "Erro ao gerar link",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
     }
-    return doc;
+
+    const portalUrl = `${window.location.origin}/client/${data.token}`;
+    
+    await navigator.clipboard.writeText(portalUrl);
+    toast({
+      title: "Link copiado!",
+      description: "Link do portal do cliente foi copiado para área de transferência.",
+    });
   };
 
-  const formatPhone = (phone: string) => {
-    return phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  const openClientPortal = async (clientId: string) => {
+    const { data, error } = await supabase
+      .from('client_access_tokens')
+      .select('token')
+      .eq('client_id', clientId)
+      .single();
+
+    if (error) {
+      toast({
+        title: "Erro ao abrir portal",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const portalUrl = `${window.location.origin}/client/${data.token}`;
+    window.open(portalUrl, '_blank');
   };
 
   return (
@@ -140,7 +157,7 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Clientes</h2>
-          <p className="text-gray-600">Gerencie seus clientes cadastrados</p>
+          <p className="text-gray-600">Gerencie seus clientes e locatários</p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -150,13 +167,11 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
               Novo Cliente
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>
-                {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
-              </DialogTitle>
+              <DialogTitle>Novo Cliente</DialogTitle>
               <DialogDescription>
-                {editingClient ? 'Atualize os dados do cliente' : 'Cadastre um novo cliente'}
+                Cadastre um novo cliente ou locatário
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -166,54 +181,46 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Nome completo do cliente"
                   required
                 />
               </div>
               
               <div>
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  placeholder="email@exemplo.com"
-                  required
                 />
               </div>
               
               <div>
-                <Label htmlFor="phone">WhatsApp *</Label>
+                <Label htmlFor="phone">Telefone (WhatsApp)</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})}
-                  placeholder="11999999999"
-                  maxLength={11}
-                  required
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  placeholder="(11) 99999-9999"
                 />
               </div>
               
               <div>
-                <Label htmlFor="document">CPF/CNPJ *</Label>
+                <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
                 <Input
-                  id="document"
-                  value={formData.document}
-                  onChange={(e) => setFormData({...formData, document: e.target.value.replace(/\D/g, '')})}
-                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                  maxLength={14}
-                  required
+                  id="cpf_cnpj"
+                  value={formData.cpf_cnpj}
+                  onChange={(e) => setFormData({...formData, cpf_cnpj: e.target.value})}
                 />
               </div>
               
               <div>
-                <Label htmlFor="address">Endereço (opcional)</Label>
-                <Input
+                <Label htmlFor="address">Endereço</Label>
+                <Textarea
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  placeholder="Endereço completo"
+                  placeholder="Endereço completo (opcional)"
                 />
               </div>
               
@@ -222,7 +229,7 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
                   Cancelar
                 </Button>
                 <Button type="submit">
-                  {editingClient ? 'Atualizar' : 'Cadastrar'}
+                  Criar Cliente
                 </Button>
               </div>
             </form>
@@ -230,14 +237,16 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
         </Dialog>
       </div>
 
-      {/* Clients List */}
       {clients.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum cliente cadastrado</h3>
-            <p className="text-gray-600 mb-6">Comece cadastrando seus primeiros clientes</p>
-            <Button onClick={() => setIsDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+            <p className="text-gray-600 mb-6">Comece cadastrando seu primeiro cliente</p>
+            <Button 
+              onClick={() => setIsDialogOpen(true)} 
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               <PlusCircle className="w-4 h-4 mr-2" />
               Cadastrar primeiro cliente
             </Button>
@@ -247,54 +256,51 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {clients.map((client) => (
             <Card key={client.id} className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{client.name}</CardTitle>
-                    <CardDescription className="flex items-center mt-1">
-                      <Badge variant="secondary" className="text-xs">
-                        {client.document.length === 11 ? 'CPF' : 'CNPJ'}
-                      </Badge>
-                    </CardDescription>
-                  </div>
-                  <div className="flex space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(client)}
-                      className="p-2"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(client.id)}
-                      className="p-2 text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+              <CardHeader>
+                <CardTitle className="text-lg">{client.name}</CardTitle>
+                <CardDescription>
+                  {client.email && (
+                    <div className="text-sm text-gray-600">{client.email}</div>
+                  )}
+                  {client.phone && (
+                    <div className="text-sm text-gray-600">{client.phone}</div>
+                  )}
+                  {client.cpf_cnpj && (
+                    <div className="text-sm text-gray-600">{client.cpf_cnpj}</div>
+                  )}
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Mail className="w-4 h-4" />
-                  <span>{client.email}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Phone className="w-4 h-4" />
-                  <span>{formatPhone(client.phone)}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <FileText className="w-4 h-4" />
-                  <span>{formatDocument(client.document)}</span>
-                </div>
+              <CardContent>
                 {client.address && (
-                  <div className="text-sm text-gray-600 mt-2">
-                    <p className="truncate">{client.address}</p>
-                  </div>
+                  <p className="text-sm text-gray-600 mb-4">{client.address}</p>
                 )}
+                
+                <div className="flex flex-col space-y-2">
+                  <Button
+                    onClick={() => openClientPortal(client.id)}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    size="sm"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Abrir Portal do Cliente
+                  </Button>
+                  
+                  <Button
+                    onClick={() => generateClientPortalLink(client.id)}
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copiar Link do Portal
+                  </Button>
+                </div>
+                
+                <div className="mt-3">
+                  <Badge variant="outline" className="text-xs">
+                    Cadastrado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
+                  </Badge>
+                </div>
               </CardContent>
             </Card>
           ))}

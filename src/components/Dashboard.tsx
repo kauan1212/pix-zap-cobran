@@ -4,39 +4,83 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { PlusCircle, Users, FileText, DollarSign, TrendingUp, Calendar, Zap } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { PlusCircle, Users, FileText, DollarSign, TrendingUp, Calendar } from 'lucide-react';
 import ClientManager from './ClientManager';
 import BillingManager from './BillingManager';
 import { toast } from '@/hooks/use-toast';
 
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
 interface Billing {
   id: string;
-  clientId: string;
-  clientName: string;
+  client_id: string;
   amount: number;
   description: string;
-  dueDate: string;
+  due_date: string;
   status: 'pending' | 'paid' | 'overdue' | 'cancelled';
-  pixCode?: string;
-  createdAt: string;
+  created_at: string;
+  clients?: Client;
 }
 
 const Dashboard = () => {
-  const { user, logout, canCreateBilling } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [billings, setBillings] = useState<Billing[]>([]);
-  const [clients, setClients] = useState([]);
+  const [clients, setClients] = useState<Client[]>([]);
 
   useEffect(() => {
-    loadData();
+    if (user) {
+      loadData();
+    }
   }, [user]);
 
-  const loadData = () => {
-    if (user) {
-      const userBillings = JSON.parse(localStorage.getItem(`billings_${user.id}`) || '[]');
-      const userClients = JSON.parse(localStorage.getItem(`clients_${user.id}`) || '[]');
-      setBillings(userBillings);
-      setClients(userClients);
+  const loadData = async () => {
+    if (!user) return;
+
+    // Load billings
+    const { data: billingsData, error: billingsError } = await supabase
+      .from('billings')
+      .select(`
+        *,
+        clients (
+          id,
+          name,
+          email,
+          phone
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (billingsError) {
+      toast({
+        title: "Erro ao carregar cobranças",
+        description: billingsError.message,
+        variant: "destructive",
+      });
+    } else {
+      setBillings(billingsData || []);
+    }
+
+    // Load clients
+    const { data: clientsData, error: clientsError } = await supabase
+      .from('clients')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (clientsError) {
+      toast({
+        title: "Erro ao carregar clientes",
+        description: clientsError.message,
+        variant: "destructive",
+      });
+    } else {
+      setClients(clientsData || []);
     }
   };
 
@@ -46,7 +90,7 @@ const Dashboard = () => {
     const currentYear = now.getFullYear();
     
     return billings.filter(billing => {
-      const billingDate = new Date(billing.createdAt);
+      const billingDate = new Date(billing.created_at);
       return billingDate.getMonth() === currentMonth && billingDate.getFullYear() === currentYear;
     });
   };
@@ -56,13 +100,6 @@ const Dashboard = () => {
   const paidAmount = monthlyBillings.filter(b => b.status === 'paid').reduce((sum, billing) => sum + billing.amount, 0);
   const pendingAmount = monthlyBillings.filter(b => b.status === 'pending').reduce((sum, billing) => sum + billing.amount, 0);
   const overdueAmount = monthlyBillings.filter(b => b.status === 'overdue').reduce((sum, billing) => sum + billing.amount, 0);
-
-  const handleUpgrade = () => {
-    toast({
-      title: "Upgrade para Premium",
-      description: "Em breve você poderá fazer upgrade para o plano premium!",
-    });
-  };
 
   if (!user) return null;
 
@@ -83,15 +120,8 @@ const Dashboard = () => {
             
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                <div className="flex items-center space-x-2">
-                  <Badge variant={user.plan === 'premium' ? 'default' : 'secondary'} className="text-xs">
-                    {user.plan === 'premium' ? 'Premium' : 'Gratuito'}
-                  </Badge>
-                  <span className="text-xs text-gray-500">
-                    {user.billingCount}/{user.maxBillings} cobranças
-                  </span>
-                </div>
+                <p className="text-sm font-medium text-gray-900">{user.user_metadata?.full_name || user.email}</p>
+                <p className="text-xs text-gray-500">{user.email}</p>
               </div>
               <Button onClick={logout} variant="outline" size="sm">
                 Sair
@@ -132,28 +162,6 @@ const Dashboard = () => {
         {/* Content */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
-            {/* Plan Status */}
-            {user.plan === 'free' && (
-              <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Zap className="w-8 h-8 text-yellow-600" />
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Upgrade para Premium</h3>
-                        <p className="text-sm text-gray-600">
-                          Cobranças ilimitadas, relatórios avançados e muito mais!
-                        </p>
-                      </div>
-                    </div>
-                    <Button onClick={handleUpgrade} className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600">
-                      Upgrade - R$ 19,90/mês
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="hover:shadow-lg transition-shadow duration-200">
@@ -238,7 +246,7 @@ const Dashboard = () => {
                     {billings.slice(0, 5).map((billing) => (
                       <div key={billing.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div>
-                          <p className="font-medium text-gray-900">{billing.clientName}</p>
+                          <p className="font-medium text-gray-900">{billing.clients?.name}</p>
                           <p className="text-sm text-gray-500">{billing.description}</p>
                         </div>
                         <div className="text-right">
@@ -274,7 +282,6 @@ const Dashboard = () => {
         {activeTab === 'billings' && (
           <BillingManager 
             clients={clients} 
-            canCreate={canCreateBilling()}
             onDataChange={loadData}
           />
         )}

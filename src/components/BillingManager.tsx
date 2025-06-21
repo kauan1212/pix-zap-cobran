@@ -8,10 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PlusCircle, FileText, Calendar, DollarSign, QrCode, Copy, MessageSquare } from 'lucide-react';
+import { PlusCircle, FileText, Calendar, DollarSign, MessageSquare, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import PixGenerator from './PixGenerator';
 
 interface Client {
   id: string;
@@ -22,154 +22,192 @@ interface Client {
 
 interface Billing {
   id: string;
-  clientId: string;
-  clientName: string;
+  client_id: string;
   amount: number;
   description: string;
-  dueDate: string;
+  due_date: string;
   status: 'pending' | 'paid' | 'overdue' | 'cancelled';
-  pixCode?: string;
-  createdAt: string;
   penalty?: number;
   interest?: number;
+  payment_date?: string;
+  created_at: string;
+  clients?: Client;
 }
 
 interface BillingManagerProps {
   clients: Client[];
-  canCreate: boolean;
   onDataChange: () => void;
 }
 
-const BillingManager = ({ clients, canCreate, onDataChange }: BillingManagerProps) => {
-  const { user, updateBillingCount } = useAuth();
+const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
+  const { user } = useAuth();
   const [billings, setBillings] = useState<Billing[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedBilling, setSelectedBilling] = useState<Billing | null>(null);
   const [formData, setFormData] = useState({
-    clientId: '',
+    client_id: '',
     amount: '',
     description: '',
-    dueDate: '',
+    due_date: '',
     penalty: '',
     interest: '',
   });
 
+  const PIX_KEY = '15991653601';
+
   useEffect(() => {
-    loadBillings();
+    if (user) {
+      loadBillings();
+    }
   }, [user]);
 
-  const loadBillings = () => {
-    if (user) {
-      const userBillings = JSON.parse(localStorage.getItem(`billings_${user.id}`) || '[]');
-      setBillings(userBillings);
+  const loadBillings = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('billings')
+      .select(`
+        *,
+        clients (
+          id,
+          name,
+          email,
+          phone
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Erro ao carregar cobranças",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setBillings(data || []);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !canCreate) {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('billings')
+      .insert([
+        {
+          user_id: user.id,
+          client_id: formData.client_id,
+          amount: parseFloat(formData.amount),
+          description: formData.description,
+          due_date: formData.due_date,
+          penalty: formData.penalty ? parseFloat(formData.penalty) : null,
+          interest: formData.interest ? parseFloat(formData.interest) : null,
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
       toast({
-        title: "Limite atingido",
-        description: "Você atingiu o limite de cobranças do seu plano.",
+        title: "Erro ao criar cobrança",
+        description: error.message,
         variant: "destructive",
       });
-      return;
-    }
-
-    const selectedClient = clients.find(c => c.id === formData.clientId);
-    if (!selectedClient) {
+    } else {
+      const selectedClient = clients.find(c => c.id === formData.client_id);
       toast({
-        title: "Erro",
-        description: "Selecione um cliente válido.",
-        variant: "destructive",
+        title: "Cobrança criada!",
+        description: `Cobrança de R$ ${parseFloat(formData.amount).toFixed(2)} criada para ${selectedClient?.name}.`,
       });
-      return;
+      resetForm();
+      setIsDialogOpen(false);
+      loadBillings();
+      onDataChange();
     }
-
-    const billingData: Billing = {
-      id: Date.now().toString(),
-      clientId: formData.clientId,
-      clientName: selectedClient.name,
-      amount: parseFloat(formData.amount),
-      description: formData.description,
-      dueDate: formData.dueDate,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      penalty: formData.penalty ? parseFloat(formData.penalty) : undefined,
-      interest: formData.interest ? parseFloat(formData.interest) : undefined,
-    };
-
-    const updatedBillings = [...billings, billingData];
-    localStorage.setItem(`billings_${user.id}`, JSON.stringify(updatedBillings));
-    setBillings(updatedBillings);
-    updateBillingCount();
-    resetForm();
-    setIsDialogOpen(false);
-    onDataChange();
-    
-    toast({
-      title: "Cobrança criada!",
-      description: `Cobrança de R$ ${billingData.amount.toFixed(2)} criada para ${selectedClient.name}.`,
-    });
   };
 
   const resetForm = () => {
     setFormData({
-      clientId: '',
+      client_id: '',
       amount: '',
       description: '',
-      dueDate: '',
+      due_date: '',
       penalty: '',
       interest: '',
     });
   };
 
-  const updateBillingStatus = (billingId: string, status: Billing['status']) => {
-    if (!user) return;
+  const updateBillingStatus = async (billingId: string, status: Billing['status']) => {
+    const updateData: any = { status };
+    
+    if (status === 'paid') {
+      updateData.payment_date = new Date().toISOString();
+    }
 
-    const updatedBillings = billings.map(billing => 
-      billing.id === billingId ? { ...billing, status } : billing
-    );
-    
-    localStorage.setItem(`billings_${user.id}`, JSON.stringify(updatedBillings));
-    setBillings(updatedBillings);
-    onDataChange();
-    
-    const statusText = {
-      paid: 'paga',
-      pending: 'pendente',
-      overdue: 'vencida',
-      cancelled: 'cancelada'
-    };
-    
-    toast({
-      title: "Status atualizado",
-      description: `Cobrança marcada como ${statusText[status]}.`,
-    });
+    const { error } = await supabase
+      .from('billings')
+      .update(updateData)
+      .eq('id', billingId);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      const statusText = {
+        paid: 'paga',
+        pending: 'pendente',
+        overdue: 'vencida',
+        cancelled: 'cancelada'
+      };
+      
+      toast({
+        title: "Status atualizado",
+        description: `Cobrança marcada como ${statusText[status]}.`,
+      });
+      loadBillings();
+      onDataChange();
+    }
   };
 
   const generateWhatsAppMessage = (billing: Billing) => {
-    const client = clients.find(c => c.id === billing.clientId);
+    const client = billing.clients;
     if (!client) return '';
 
-    const dueDate = new Date(billing.dueDate).toLocaleDateString('pt-BR');
+    const dueDate = new Date(billing.due_date).toLocaleDateString('pt-BR');
     const amount = billing.amount.toLocaleString('pt-BR', { 
       style: 'currency', 
       currency: 'BRL' 
     });
 
-    return `Olá, ${client.name}! 
+    let message = `Olá, ${client.name}! 
 
 Você tem uma nova cobrança:
 💰 Valor: ${amount}
 📅 Vencimento: ${dueDate}
 📝 Descrição: ${billing.description}
 
-Para pagar via PIX, clique no link abaixo:
-[Link do PIX será gerado aqui]
+💳 Para pagar via PIX, use a chave:
+${PIX_KEY}
+
+Após o pagamento, envie o comprovante para confirmarmos.
 
 Obrigado!`;
+
+    if (billing.penalty || billing.interest) {
+      message += `\n\n⚠️ Em caso de atraso:`;
+      if (billing.penalty) {
+        message += `\n• Multa: R$ ${billing.penalty.toFixed(2)}`;
+      }
+      if (billing.interest) {
+        message += `\n• Juros: ${billing.interest}% ao dia`;
+      }
+    }
+
+    return message;
   };
 
   const copyWhatsAppMessage = (billing: Billing) => {
@@ -178,6 +216,14 @@ Obrigado!`;
     toast({
       title: "Mensagem copiada!",
       description: "Mensagem copiada para a área de transferência.",
+    });
+  };
+
+  const copyPixKey = () => {
+    navigator.clipboard.writeText(PIX_KEY);
+    toast({
+      title: "Chave PIX copiada!",
+      description: `Chave PIX ${PIX_KEY} copiada para área de transferência.`,
     });
   };
 
@@ -211,11 +257,7 @@ Obrigado!`;
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
-              onClick={resetForm} 
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={!canCreate}
-            >
+            <Button onClick={resetForm} className="bg-blue-600 hover:bg-blue-700">
               <PlusCircle className="w-4 h-4 mr-2" />
               Nova Cobrança
             </Button>
@@ -231,8 +273,8 @@ Obrigado!`;
               <div>
                 <Label htmlFor="client">Cliente *</Label>
                 <Select 
-                  value={formData.clientId} 
-                  onValueChange={(value) => setFormData({...formData, clientId: value})}
+                  value={formData.client_id} 
+                  onValueChange={(value) => setFormData({...formData, client_id: value})}
                   required
                 >
                   <SelectTrigger>
@@ -274,12 +316,12 @@ Obrigado!`;
               </div>
               
               <div>
-                <Label htmlFor="dueDate">Data de Vencimento *</Label>
+                <Label htmlFor="due_date">Data de Vencimento *</Label>
                 <Input
-                  id="dueDate"
+                  id="due_date"
                   type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
+                  value={formData.due_date}
+                  onChange={(e) => setFormData({...formData, due_date: e.target.value})}
                   required
                 />
               </div>
@@ -316,7 +358,7 @@ Obrigado!`;
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={!canCreate}>
+                <Button type="submit">
                   Criar Cobrança
                 </Button>
               </div>
@@ -325,7 +367,22 @@ Obrigado!`;
         </Dialog>
       </div>
 
-      {/* Billings List */}
+      {/* PIX Key Display */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-blue-900">Chave PIX do Sistema</h3>
+              <p className="text-blue-700 font-mono text-lg">{PIX_KEY}</p>
+            </div>
+            <Button onClick={copyPixKey} variant="outline" size="sm">
+              <Copy className="w-4 h-4 mr-2" />
+              Copiar Chave
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {billings.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
@@ -335,7 +392,6 @@ Obrigado!`;
             <Button 
               onClick={() => setIsDialogOpen(true)} 
               className="bg-blue-600 hover:bg-blue-700"
-              disabled={!canCreate}
             >
               <PlusCircle className="w-4 h-4 mr-2" />
               Criar primeira cobrança
@@ -349,7 +405,7 @@ Obrigado!`;
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-lg">{billing.clientName}</CardTitle>
+                    <CardTitle className="text-lg">{billing.clients?.name}</CardTitle>
                     <CardDescription className="text-sm text-gray-600 mt-1">
                       {billing.description}
                     </CardDescription>
@@ -369,7 +425,7 @@ Obrigado!`;
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
-                      <span>Vencimento: {new Date(billing.dueDate).toLocaleDateString('pt-BR')}</span>
+                      <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
                     </div>
                     {billing.penalty && (
                       <div className="flex items-center space-x-1">
@@ -387,26 +443,17 @@ Obrigado!`;
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setSelectedBilling(billing)}
-                  >
-                    <QrCode className="w-4 h-4 mr-2" />
-                    PIX
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => copyWhatsAppMessage(billing)}
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />
-                    WhatsApp
+                    Copiar Mensagem WhatsApp
                   </Button>
                   
                   {billing.status === 'pending' && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => updateBillingStatus(billing.id, 'paid')}
+                      onClick={() => updateBil lingStatus(billing.id, 'paid')}
                       className="text-green-600 hover:text-green-700"
                     >
                       Marcar como Paga
@@ -423,19 +470,17 @@ Obrigado!`;
                       Cancelar
                     </Button>
                   )}
+
+                  {billing.status === 'paid' && billing.payment_date && (
+                    <Badge variant="outline" className="text-green-600">
+                      Pago em {new Date(billing.payment_date).toLocaleDateString('pt-BR')}
+                    </Badge>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      )}
-
-      {/* PIX Dialog */}
-      {selectedBilling && (
-        <PixGenerator
-          billing={selectedBilling}
-          onClose={() => setSelectedBilling(null)}
-        />
       )}
     </div>
   );
