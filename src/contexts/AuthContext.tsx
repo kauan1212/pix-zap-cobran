@@ -83,7 +83,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         options: {
           data: {
             full_name: name,
-          }
+          },
+          emailRedirectTo: undefined
         }
       });
 
@@ -96,9 +97,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
 
+      // Se não houve erro, o usuário foi criado com sucesso
       toast({
-        title: "Cadastro realizado com sucesso!",
-        description: "Verifique seu email para confirmar a conta",
+        title: "Conta criada com sucesso!",
+        description: "Você já pode acessar o sistema",
       });
       return true;
     } catch (error) {

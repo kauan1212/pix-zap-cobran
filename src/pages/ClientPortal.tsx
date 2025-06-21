@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { Calendar, DollarSign, Copy, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calendar, DollarSign, Copy, AlertCircle, CheckCircle2, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Client {
@@ -76,13 +75,6 @@ const ClientPortal = () => {
 
       setClient(tokenData.clients);
 
-      // Set context for RLS policy
-      await supabase.rpc('set_config', {
-        setting_name: 'app.client_token',
-        setting_value: token,
-        is_local: true
-      });
-
       // Load billings for this client
       const { data: billingsData, error: billingsError } = await supabase
         .from('billings')
@@ -96,7 +88,10 @@ const ClientPortal = () => {
         return;
       }
 
-      setBillings(billingsData || []);
+      setBillings((billingsData as any[])?.map(item => ({
+        ...item,
+        status: item.status as 'pending' | 'paid' | 'overdue' | 'cancelled'
+      })) || []);
     } catch (err) {
       console.error('Error:', err);
       setError('Erro ao carregar dados');

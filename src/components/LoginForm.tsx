@@ -44,7 +44,7 @@ const LoginForm = ({ onToggleMode, isLogin }: LoginFormProps) => {
             CobrançaPro
           </CardTitle>
           <CardDescription className="text-gray-600">
-            {isLogin ? 'Entre na sua conta' : 'Crie sua conta gratuita'}
+            {isLogin ? 'Entre na sua conta' : 'Crie sua conta'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -104,15 +104,6 @@ const LoginForm = ({ onToggleMode, isLogin }: LoginFormProps) => {
               {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login'}
             </button>
           </div>
-          
-          {!isLogin && (
-            <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
-              <p className="text-xs text-green-700 text-center">
-                🎉 <strong>Plano Gratuito:</strong> 5 cobranças por mês<br/>
-                💎 <strong>Plano Premium:</strong> Cobranças ilimitadas por R$ 19,90/mês
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

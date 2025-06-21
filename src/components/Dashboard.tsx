@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,9 +29,9 @@ interface Billing {
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [billings, setBillings] = useState<Billing[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [billings, setBillings] = useState<Billing[]>([]);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (user) {
@@ -41,10 +40,32 @@ const Dashboard = () => {
   }, [user]);
 
   const loadData = async () => {
+    await Promise.all([loadClients(), loadBillings()]);
+  };
+
+  const loadClients = async () => {
     if (!user) return;
 
-    // Load billings
-    const { data: billingsData, error: billingsError } = await supabase
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Erro ao carregar clientes",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setClients(data || []);
+    }
+  };
+
+  const loadBillings = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
       .from('billings')
       .select(`
         *,
@@ -57,30 +78,17 @@ const Dashboard = () => {
       `)
       .order('created_at', { ascending: false });
 
-    if (billingsError) {
+    if (error) {
       toast({
         title: "Erro ao carregar cobranças",
-        description: billingsError.message,
+        description: error.message,
         variant: "destructive",
       });
     } else {
-      setBillings(billingsData || []);
-    }
-
-    // Load clients
-    const { data: clientsData, error: clientsError } = await supabase
-      .from('clients')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (clientsError) {
-      toast({
-        title: "Erro ao carregar clientes",
-        description: clientsError.message,
-        variant: "destructive",
-      });
-    } else {
-      setClients(clientsData || []);
+      setBillings((data as any[])?.map(item => ({
+        ...item,
+        status: item.status as 'pending' | 'paid' | 'overdue' | 'cancelled'
+      })) || []);
     }
   };
 
@@ -136,7 +144,7 @@ const Dashboard = () => {
         <nav className="mb-8">
           <div className="flex space-x-1 bg-white p-1 rounded-lg shadow-sm">
             {[
-              { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+              { id: 'overview', label: 'Overview', icon: TrendingUp },
               { id: 'clients', label: 'Clientes', icon: Users },
               { id: 'billings', label: 'Cobranças', icon: FileText },
             ].map((tab) => {
@@ -160,7 +168,7 @@ const Dashboard = () => {
         </nav>
 
         {/* Content */}
-        {activeTab === 'dashboard' && (
+        {activeTab === 'overview' && (
           <div className="space-y-8">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

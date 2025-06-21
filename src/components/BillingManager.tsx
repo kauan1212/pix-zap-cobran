@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -83,7 +82,10 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
         variant: "destructive",
       });
     } else {
-      setBillings(data || []);
+      setBillings((data as any[])?.map(item => ({
+        ...item,
+        status: item.status as 'pending' | 'paid' | 'overdue' | 'cancelled'
+      })) || []);
     }
   };
 
