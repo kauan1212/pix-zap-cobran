@@ -453,7 +453,7 @@ Obrigado!`;
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => updateBil lingStatus(billing.id, 'paid')}
+                      onClick={() => updateBillingStatus(billing.id, 'paid')}
                       className="text-green-600 hover:text-green-700"
                     >
                       Marcar como Paga
