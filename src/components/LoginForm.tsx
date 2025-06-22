@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface LoginFormProps {
@@ -16,20 +17,54 @@ const LoginForm = ({ onToggleMode, isLogin }: LoginFormProps) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const { login, register } = useAuth();
+
+  // Carregar credenciais salvas ao montar o componente
+  useEffect(() => {
+    const savedCredentials = localStorage.getItem('savedCredentials');
+    if (savedCredentials) {
+      const { email: savedEmail, password: savedPassword } = JSON.parse(savedCredentials);
+      setEmail(savedEmail);
+      setPassword(savedPassword);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      let success = false;
+      
       if (isLogin) {
-        await login(email, password);
+        success = await login(email, password);
       } else {
-        await register(email, password, name);
+        success = await register(email, password, name);
+      }
+
+      // Salvar credenciais se o login foi bem-sucedido e "lembrar-me" está marcado
+      if (success && isLogin && rememberMe) {
+        localStorage.setItem('savedCredentials', JSON.stringify({
+          email,
+          password
+        }));
+      } else if (success && isLogin && !rememberMe) {
+        // Remove credenciais salvas se "lembrar-me" não está marcado
+        localStorage.removeItem('savedCredentials');
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRememberMeChange = (checked: boolean) => {
+    setRememberMe(checked);
+    
+    // Se desmarcou "lembrar-me", remove as credenciais salvas
+    if (!checked) {
+      localStorage.removeItem('savedCredentials');
     }
   };
 
@@ -87,6 +122,23 @@ const LoginForm = ({ onToggleMode, isLogin }: LoginFormProps) => {
                 className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
               />
             </div>
+            
+            {isLogin && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={handleRememberMeChange}
+                />
+                <Label 
+                  htmlFor="remember" 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Lembrar email e senha
+                </Label>
+              </div>
+            )}
+            
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105"

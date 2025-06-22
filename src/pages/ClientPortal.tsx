@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,7 @@ interface Client {
   name: string;
   email: string;
   phone: string;
+  user_id: string;
 }
 
 interface Billing {
@@ -45,30 +47,20 @@ const ClientPortal = () => {
       setLoading(true);
       setError(null);
 
-      console.log('Token received:', token);
+      console.log('Loading client data for token:', token);
 
-      // Buscar dados do cliente através do token
+      // Primeiro, buscar o token e validar
       const { data: tokenData, error: tokenError } = await supabase
         .from('client_access_tokens')
-        .select(`
-          client_id,
-          expires_at,
-          clients!inner (
-            id,
-            name,
-            email,
-            phone,
-            user_id
-          )
-        `)
+        .select('client_id, expires_at')
         .eq('token', token)
         .single();
 
-      console.log('Token verification result:', { tokenData, tokenError });
+      console.log('Token query result:', { tokenData, tokenError });
 
       if (tokenError || !tokenData) {
-        console.error('Token error:', tokenError);
-        setError('Link inválido ou expirado');
+        console.error('Token not found:', tokenError);
+        setError('Link inválido ou não encontrado');
         return;
       }
 
@@ -79,8 +71,22 @@ const ClientPortal = () => {
         return;
       }
 
-      console.log('Token valid, client data:', tokenData.clients);
-      setClient(tokenData.clients);
+      // Buscar dados do cliente
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('id, name, email, phone, user_id')
+        .eq('id', tokenData.client_id)
+        .single();
+
+      console.log('Client query result:', { clientData, clientError });
+
+      if (clientError || !clientData) {
+        console.error('Client not found:', clientError);
+        setError('Cliente não encontrado');
+        return;
+      }
+
+      setClient(clientData);
 
       // Carregar cobranças deste cliente
       const { data: billingsData, error: billingsError } = await supabase
@@ -93,34 +99,35 @@ const ClientPortal = () => {
 
       if (billingsError) {
         console.error('Error loading billings:', billingsError);
-        setError('Erro ao carregar cobranças');
-        return;
+        // Não definir erro aqui, apenas mostrar array vazio
+      } else {
+        setBillings((billingsData || []).map(item => ({
+          ...item,
+          status: item.status as 'pending' | 'paid' | 'overdue' | 'cancelled'
+        })));
       }
 
-      setBillings((billingsData as any[])?.map(item => ({
-        ...item,
-        status: item.status as 'pending' | 'paid' | 'overdue' | 'cancelled'
-      })) || []);
-
       // Buscar chave PIX do proprietário da conta
-      if (tokenData.clients.user_id) {
+      if (clientData.user_id) {
         const { data: profileData } = await supabase
           .from('profiles')
           .select('pix_key')
-          .eq('id', tokenData.clients.user_id)
+          .eq('id', clientData.user_id)
           .single();
+
+        console.log('Profile PIX key:', profileData);
 
         if (profileData?.pix_key) {
           setPixKey(profileData.pix_key);
         } else {
-          // Chave PIX padrão se não configurada
-          setPixKey('15991653601');
+          // Usar email do cliente como chave PIX padrão se não configurada
+          setPixKey(clientData.email || 'pix@exemplo.com');
         }
       }
 
     } catch (err) {
-      console.error('Error:', err);
-      setError('Erro ao carregar dados');
+      console.error('Unexpected error:', err);
+      setError('Erro ao carregar dados do cliente');
     } finally {
       setLoading(false);
     }
@@ -169,7 +176,7 @@ const ClientPortal = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
+          <p className="text-gray-600">Carregando dados do cliente...</p>
         </div>
       </div>
     );
@@ -183,6 +190,9 @@ const ClientPortal = () => {
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Negado</h2>
             <p className="text-gray-600">{error}</p>
+            <p className="text-sm text-gray-500 mt-4">
+              Verifique se o link está correto ou entre em contato com quem enviou o link.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -266,7 +276,7 @@ const ClientPortal = () => {
               <Copy className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg font-bold text-blue-900 font-mono mb-2">
+              <div className="text-lg font-bold text-blue-900 font-mono mb-2 break-all">
                 {pixKey}
               </div>
               <Button onClick={copyPixKey} size="sm" className="w-full">
@@ -295,10 +305,10 @@ const ClientPortal = () => {
                             <Calendar className="w-4 h-4" />
                             <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
                           </div>
-                          {billing.penalty && (
+                          {billing.penalty && billing.penalty > 0 && (
                             <span className="text-red-600">Multa: R$ {billing.penalty.toFixed(2)}</span>
                           )}
-                          {billing.interest && (
+                          {billing.interest && billing.interest > 0 && (
                             <span className="text-red-600">Juros: {billing.interest}% ao mês</span>
                           )}
                         </CardDescription>
@@ -318,7 +328,7 @@ const ClientPortal = () => {
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <h4 className="font-semibold text-blue-900 mb-2">Para pagar via PIX:</h4>
                       <p className="text-sm text-blue-800 mb-3">
-                        1. Copie a chave PIX: <span className="font-mono font-bold">{pixKey}</span>
+                        1. Copie a chave PIX: <span className="font-mono font-bold break-all">{pixKey}</span>
                       </p>
                       <p className="text-sm text-blue-800 mb-3">
                         2. Abra o app do seu banco e faça o PIX
