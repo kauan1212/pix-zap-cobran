@@ -20,6 +20,7 @@ export type Database = {
           interest: number | null
           payment_date: string | null
           penalty: number | null
+          recurring_plan_id: string | null
           status: string
           updated_at: string
           user_id: string
@@ -34,6 +35,7 @@ export type Database = {
           interest?: number | null
           payment_date?: string | null
           penalty?: number | null
+          recurring_plan_id?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -48,6 +50,7 @@ export type Database = {
           interest?: number | null
           payment_date?: string | null
           penalty?: number | null
+          recurring_plan_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -58,6 +61,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billings_recurring_plan_id_fkey"
+            columns: ["recurring_plan_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -281,6 +291,62 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      recurring_plans: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          description: string
+          frequency: string
+          id: string
+          interest: number | null
+          is_active: boolean
+          name: string
+          next_billing_date: string
+          penalty: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          description: string
+          frequency: string
+          id?: string
+          interest?: number | null
+          is_active?: boolean
+          name: string
+          next_billing_date: string
+          penalty?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          description?: string
+          frequency?: string
+          id?: string
+          interest?: number | null
+          is_active?: boolean
+          name?: string
+          next_billing_date?: string
+          penalty?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       renters: {
         Row: {
