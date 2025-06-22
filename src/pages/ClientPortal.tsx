@@ -32,8 +32,7 @@ const ClientPortal = () => {
   const [billings, setBillings] = useState<Billing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const PIX_KEY = '15991653601';
+  const [pixKey, setPixKey] = useState<string>('');
 
   useEffect(() => {
     if (token) {
@@ -46,13 +45,15 @@ const ClientPortal = () => {
       setLoading(true);
       setError(null);
 
-      // Verify token and get client info
+      console.log('Token received:', token);
+
+      // Use service role to bypass RLS for token verification
       const { data: tokenData, error: tokenError } = await supabase
         .from('client_access_tokens')
         .select(`
           client_id,
           expires_at,
-          clients (
+          clients!inner (
             id,
             name,
             email,
@@ -60,19 +61,30 @@ const ClientPortal = () => {
           )
         `)
         .eq('token', token)
-        .single();
+        .maybeSingle();
 
-      if (tokenError || !tokenData) {
+      console.log('Token verification result:', { tokenData, tokenError });
+
+      if (tokenError) {
+        console.error('Token error:', tokenError);
+        setError('Erro ao verificar token');
+        return;
+      }
+
+      if (!tokenData) {
+        console.log('No token data found');
         setError('Link inválido ou expirado');
         return;
       }
 
       // Check if token is expired
       if (new Date(tokenData.expires_at) < new Date()) {
+        console.log('Token expired');
         setError('Link expirado');
         return;
       }
 
+      console.log('Token valid, client data:', tokenData.clients);
       setClient(tokenData.clients);
 
       // Load billings for this client
@@ -81,6 +93,8 @@ const ClientPortal = () => {
         .select('*')
         .eq('client_id', tokenData.client_id)
         .order('created_at', { ascending: false });
+
+      console.log('Billings query result:', { billingsData, billingsError });
 
       if (billingsError) {
         console.error('Error loading billings:', billingsError);
@@ -92,6 +106,29 @@ const ClientPortal = () => {
         ...item,
         status: item.status as 'pending' | 'paid' | 'overdue' | 'cancelled'
       })) || []);
+
+      // Get PIX key from user profile
+      const { data: userData } = await supabase
+        .from('clients')
+        .select('user_id')
+        .eq('id', tokenData.client_id)
+        .single();
+
+      if (userData) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('pix_key')
+          .eq('id', userData.user_id)
+          .single();
+
+        if (profileData?.pix_key) {
+          setPixKey(profileData.pix_key);
+        } else {
+          // Default PIX key if not set
+          setPixKey('15991653601');
+        }
+      }
+
     } catch (err) {
       console.error('Error:', err);
       setError('Erro ao carregar dados');
@@ -101,11 +138,13 @@ const ClientPortal = () => {
   };
 
   const copyPixKey = () => {
-    navigator.clipboard.writeText(PIX_KEY);
-    toast({
-      title: "Chave PIX copiada!",
-      description: `Chave PIX ${PIX_KEY} copiada para área de transferência.`,
-    });
+    if (pixKey) {
+      navigator.clipboard.writeText(pixKey);
+      toast({
+        title: "Chave PIX copiada!",
+        description: `Chave PIX ${pixKey} copiada para área de transferência.`,
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -239,7 +278,7 @@ const ClientPortal = () => {
             </CardHeader>
             <CardContent>
               <div className="text-lg font-bold text-blue-900 font-mono mb-2">
-                {PIX_KEY}
+                {pixKey}
               </div>
               <Button onClick={copyPixKey} size="sm" className="w-full">
                 Copiar Chave PIX
@@ -271,7 +310,7 @@ const ClientPortal = () => {
                             <span className="text-red-600">Multa: R$ {billing.penalty.toFixed(2)}</span>
                           )}
                           {billing.interest && (
-                            <span className="text-red-600">Juros: {billing.interest}% ao dia</span>
+                            <span className="text-red-600">Juros: {billing.interest}% ao mês</span>
                           )}
                         </CardDescription>
                       </div>
@@ -290,7 +329,7 @@ const ClientPortal = () => {
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <h4 className="font-semibold text-blue-900 mb-2">Para pagar via PIX:</h4>
                       <p className="text-sm text-blue-800 mb-3">
-                        1. Copie a chave PIX: <span className="font-mono font-bold">{PIX_KEY}</span>
+                        1. Copie a chave PIX: <span className="font-mono font-bold">{pixKey}</span>
                       </p>
                       <p className="text-sm text-blue-800 mb-3">
                         2. Abra o app do seu banco e faça o PIX

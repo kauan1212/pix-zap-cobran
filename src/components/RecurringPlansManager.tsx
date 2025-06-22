@@ -52,7 +52,7 @@ const RecurringPlansManager = ({ clients, onDataChange }: RecurringPlansManagerP
     description: '',
     frequency: 'monthly' as 'weekly' | 'biweekly' | 'monthly',
     penalty: '',
-    interest: '',
+    interest: '1',
     next_billing_date: '',
   });
 
@@ -85,7 +85,12 @@ const RecurringPlansManager = ({ clients, onDataChange }: RecurringPlansManagerP
         variant: "destructive",
       });
     } else {
-      setPlans(data || []);
+      // Fix the type conversion
+      const typedPlans: RecurringPlan[] = (data || []).map(item => ({
+        ...item,
+        frequency: item.frequency as 'weekly' | 'biweekly' | 'monthly'
+      }));
+      setPlans(typedPlans);
     }
   };
 
@@ -139,7 +144,7 @@ const RecurringPlansManager = ({ clients, onDataChange }: RecurringPlansManagerP
       description: '',
       frequency: 'monthly',
       penalty: '',
-      interest: '',
+      interest: '1',
       next_billing_date: '',
     });
   };
@@ -376,16 +381,18 @@ const RecurringPlansManager = ({ clients, onDataChange }: RecurringPlansManagerP
                 </div>
                 
                 <div>
-                  <Label htmlFor="interest">Juros (% ao dia)</Label>
+                  <Label htmlFor="interest">Juros (% ao mês)</Label>
                   <Input
                     id="interest"
                     type="number"
                     step="0.01"
                     min="0"
+                    max="1"
                     value={formData.interest}
                     onChange={(e) => setFormData({...formData, interest: e.target.value})}
-                    placeholder="0,00"
+                    placeholder="1.00"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Máximo legal: 1% ao mês</p>
                 </div>
               </div>
               
@@ -454,6 +461,11 @@ const RecurringPlansManager = ({ clients, onDataChange }: RecurringPlansManagerP
                       <div className="flex items-center space-x-1">
                         <DollarSign className="w-4 h-4" />
                         <span>Multa: R$ {plan.penalty.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {plan.interest && (
+                      <div className="flex items-center space-x-1">
+                        <span>Juros: {plan.interest}% ao mês</span>
                       </div>
                     )}
                   </div>
