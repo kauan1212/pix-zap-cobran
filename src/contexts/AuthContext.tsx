@@ -102,6 +102,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         title: "Conta criada com sucesso!",
         description: "Você já pode acessar o sistema",
       });
+
+      // Aguardar um pouco para garantir que o perfil foi criado pelo trigger
+      setTimeout(async () => {
+        // Gerar chave PIX padrão baseada no ID do usuário (pode ser personalizada depois)
+        if (data.user) {
+          const defaultPixKey = data.user.email || `user-${data.user.id.substring(0, 8)}`;
+          
+          await supabase
+            .from('profiles')
+            .update({ pix_key: defaultPixKey })
+            .eq('id', data.user.id);
+        }
+      }, 1000);
+
       return true;
     } catch (error) {
       toast({

@@ -47,7 +47,7 @@ const ClientPortal = () => {
 
       console.log('Token received:', token);
 
-      // Use service role to bypass RLS for token verification
+      // Buscar dados do cliente através do token
       const { data: tokenData, error: tokenError } = await supabase
         .from('client_access_tokens')
         .select(`
@@ -57,27 +57,22 @@ const ClientPortal = () => {
             id,
             name,
             email,
-            phone
+            phone,
+            user_id
           )
         `)
         .eq('token', token)
-        .maybeSingle();
+        .single();
 
       console.log('Token verification result:', { tokenData, tokenError });
 
-      if (tokenError) {
+      if (tokenError || !tokenData) {
         console.error('Token error:', tokenError);
-        setError('Erro ao verificar token');
-        return;
-      }
-
-      if (!tokenData) {
-        console.log('No token data found');
         setError('Link inválido ou expirado');
         return;
       }
 
-      // Check if token is expired
+      // Verificar se o token não expirou
       if (new Date(tokenData.expires_at) < new Date()) {
         console.log('Token expired');
         setError('Link expirado');
@@ -87,7 +82,7 @@ const ClientPortal = () => {
       console.log('Token valid, client data:', tokenData.clients);
       setClient(tokenData.clients);
 
-      // Load billings for this client
+      // Carregar cobranças deste cliente
       const { data: billingsData, error: billingsError } = await supabase
         .from('billings')
         .select('*')
@@ -107,24 +102,18 @@ const ClientPortal = () => {
         status: item.status as 'pending' | 'paid' | 'overdue' | 'cancelled'
       })) || []);
 
-      // Get PIX key from user profile
-      const { data: userData } = await supabase
-        .from('clients')
-        .select('user_id')
-        .eq('id', tokenData.client_id)
-        .single();
-
-      if (userData) {
+      // Buscar chave PIX do proprietário da conta
+      if (tokenData.clients.user_id) {
         const { data: profileData } = await supabase
           .from('profiles')
           .select('pix_key')
-          .eq('id', userData.user_id)
+          .eq('id', tokenData.clients.user_id)
           .single();
 
         if (profileData?.pix_key) {
           setPixKey(profileData.pix_key);
         } else {
-          // Default PIX key if not set
+          // Chave PIX padrão se não configurada
           setPixKey('15991653601');
         }
       }

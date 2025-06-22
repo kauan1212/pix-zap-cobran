@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Copy, QrCode, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Billing {
   id: string;
@@ -20,24 +22,46 @@ interface PixGeneratorProps {
 }
 
 const PixGenerator = ({ billing, onClose }: PixGeneratorProps) => {
+  const { user } = useAuth();
   const [pixCode, setPixCode] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [pixKey, setPixKey] = useState('');
 
   useEffect(() => {
-    generatePixCode();
-  }, [billing]);
+    loadPixKeyAndGenerate();
+  }, [billing, user]);
 
-  const generatePixCode = () => {
-    // Chave PIX fornecida pelo usuário
-    const pixKey = '15991653601';
+  const loadPixKeyAndGenerate = async () => {
+    try {
+      // Carregar chave PIX do usuário
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('pix_key')
+        .eq('id', user?.id)
+        .single();
+
+      let userPixKey = '15991653601'; // PIX padrão
+      if (profileData?.pix_key) {
+        userPixKey = profileData.pix_key;
+      }
+
+      setPixKey(userPixKey);
+      generatePixCode(userPixKey);
+    } catch (error) {
+      console.error('Error loading PIX key:', error);
+      generatePixCode('15991653601'); // Usar PIX padrão em caso de erro
+    }
+  };
+
+  const generatePixCode = (key: string) => {
     const merchantName = 'COBRANCAPRO';
     const merchantCity = 'SAO PAULO';
     const amount = billing.amount.toFixed(2);
     
-    // Gerar código PIX simplificado (em produção, usar biblioteca específica)
-    const pixString = `00020101021126580014br.gov.bcb.pix0136${pixKey}52040000530398654${amount.length.toString().padStart(2, '0')}${amount}5802BR5913${merchantName}6009${merchantCity}62070503***6304`;
+    // Gerar código PIX simplificado
+    const pixString = `00020101021126580014br.gov.bcb.pix0136${key}52040000530398654${amount.length.toString().padStart(2, '0')}${amount}5802BR5913${merchantName}6009${merchantCity}62070503***6304`;
     
-    // Calcular CRC16 (simplificado)
+    // Calcular CRC16 simplificado
     const crc = calculateCRC16(pixString);
     const finalPixCode = pixString + crc;
     
@@ -50,7 +74,6 @@ const PixGenerator = ({ billing, onClose }: PixGeneratorProps) => {
 
   const calculateCRC16 = (str: string): string => {
     // Implementação simplificada do CRC16
-    // Em produção, usar uma biblioteca adequada
     let crc = 0xFFFF;
     for (let i = 0; i < str.length; i++) {
       crc ^= str.charCodeAt(i) << 8;
@@ -134,6 +157,12 @@ Obrigado!`;
                   <span className="text-sm text-gray-600">Descrição:</span>
                   <span className="font-medium text-right max-w-xs truncate">
                     {billing.description}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Chave PIX:</span>
+                  <span className="font-mono text-sm font-bold text-blue-600">
+                    {pixKey}
                   </span>
                 </div>
               </div>
