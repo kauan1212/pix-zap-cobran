@@ -14,6 +14,7 @@ const PixSettings = () => {
   const [pixKey, setPixKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [hasExistingKey, setHasExistingKey] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -24,24 +25,55 @@ const PixSettings = () => {
   const loadPixKey = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First try to get from profiles table (old structure)
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('pix_key')
         .eq('id', user?.id)
         .single();
 
-      if (error) {
-        console.error('Error loading PIX key:', error);
-        return;
+      // Then try to get from pix_settings table (new structure)
+      const { data: pixData } = await supabase
+        .from('pix_settings')
+        .select('pix_key')
+        .eq('user_id', user?.id)
+        .single();
+
+      let currentPixKey = '';
+      
+      if (pixData?.pix_key) {
+        currentPixKey = pixData.pix_key;
+        setHasExistingKey(true);
+      } else if (profileData?.pix_key) {
+        currentPixKey = profileData.pix_key;
+        // Migrate from profiles to pix_settings
+        await migratePixKey(profileData.pix_key);
       }
 
-      if (data?.pix_key) {
-        setPixKey(data.pix_key);
+      if (currentPixKey) {
+        setPixKey(currentPixKey);
       }
     } catch (error) {
       console.error('Error loading PIX key:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const migratePixKey = async (oldPixKey: string) => {
+    try {
+      await supabase
+        .from('pix_settings')
+        .insert([
+          {
+            user_id: user?.id,
+            pix_key: oldPixKey,
+          }
+        ]);
+      setHasExistingKey(true);
+    } catch (error) {
+      console.error('Error migrating PIX key:', error);
     }
   };
 
@@ -57,19 +89,31 @@ const PixSettings = () => {
 
     try {
       setSaving(true);
-      const { error } = await supabase
-        .from('profiles')
-        .update({ pix_key: pixKey.trim() })
-        .eq('id', user?.id);
+      
+      if (hasExistingKey) {
+        // Update existing PIX key
+        const { error } = await supabase
+          .from('pix_settings')
+          .update({ 
+            pix_key: pixKey.trim(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user?.id);
 
-      if (error) {
-        console.error('Error saving PIX key:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao salvar chave PIX",
-          variant: "destructive",
-        });
-        return;
+        if (error) throw error;
+      } else {
+        // Insert new PIX key
+        const { error } = await supabase
+          .from('pix_settings')
+          .insert([
+            {
+              user_id: user?.id,
+              pix_key: pixKey.trim(),
+            }
+          ]);
+
+        if (error) throw error;
+        setHasExistingKey(true);
       }
 
       toast({
@@ -80,7 +124,7 @@ const PixSettings = () => {
       console.error('Error saving PIX key:', error);
       toast({
         title: "Erro",
-        description: "Erro inesperado ao salvar chave PIX",
+        description: "Erro ao salvar chave PIX",
         variant: "destructive",
       });
     } finally {
@@ -111,7 +155,7 @@ const PixSettings = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="pixKey">Chave PIX</Label>
+          <Label htmlFor="pixKey">Chave PIX *</Label>
           <Input
             id="pixKey"
             type="text"
@@ -126,7 +170,7 @@ const PixSettings = () => {
         
         <Button onClick={handleSave} disabled={saving} className="w-full">
           <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Salvando...' : 'Salvar Chave PIX'}
+          {saving ? 'Salvando...' : hasExistingKey ? 'Atualizar Chave PIX' : 'Salvar Chave PIX'}
         </Button>
       </CardContent>
     </Card>

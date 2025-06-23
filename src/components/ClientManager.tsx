@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PlusCircle, Users, ExternalLink, Copy } from 'lucide-react';
+import { PlusCircle, Users, ExternalLink, Copy, Pencil, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Client {
@@ -30,6 +29,8 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -50,6 +51,7 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
     const { data, error } = await supabase
       .from('clients')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -100,7 +102,7 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
     // Criar token de acesso para o cliente
     const token = generateClientToken();
     const expiresAt = new Date();
-    expiresAt.setFullYear(expiresAt.getFullYear() + 1); // Token válido por 1 ano
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
     const { error: tokenError } = await supabase
       .from('client_access_tokens')
@@ -114,7 +116,6 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
 
     if (tokenError) {
       console.error('Erro ao criar token:', tokenError);
-      // Não bloquear a criação do cliente por causa do token
     }
 
     toast({
@@ -123,6 +124,75 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
     });
     resetForm();
     setIsDialogOpen(false);
+    loadClients();
+    onDataChange();
+  };
+
+  const handleEdit = (client: Client) => {
+    setEditingClient(client);
+    setFormData({
+      name: client.name,
+      email: client.email || '',
+      phone: client.phone || '',
+      cpf_cnpj: client.cpf_cnpj || '',
+      address: client.address || '',
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingClient) return;
+
+    const { error } = await supabase
+      .from('clients')
+      .update(formData)
+      .eq('id', editingClient.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar cliente",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Cliente atualizado!",
+      description: `Cliente ${formData.name} foi atualizado com sucesso.`,
+    });
+    resetForm();
+    setIsEditDialogOpen(false);
+    setEditingClient(null);
+    loadClients();
+    onDataChange();
+  };
+
+  const handleDelete = async (clientId: string, clientName: string) => {
+    if (!confirm(`Tem certeza que deseja excluir o cliente ${clientName}? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', clientId);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir cliente",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Cliente excluído!",
+      description: `Cliente ${clientName} foi excluído com sucesso.`,
+    });
     loadClients();
     onDataChange();
   };
@@ -137,15 +207,14 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
     });
   };
 
-  const generateClientPortalLink = async (clientId: string) => {
-    // Primeiro verificar se já existe um token
+  const ensureClientToken = async (clientId: string) => {
+    // Verificar se já existe um token
     let { data: tokenData, error: tokenError } = await supabase
       .from('client_access_tokens')
       .select('token')
       .eq('client_id', clientId)
       .single();
 
-    // Se não existir token, criar um novo
     if (tokenError || !tokenData) {
       const token = generateClientToken();
       const expiresAt = new Date();
@@ -164,64 +233,45 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
         .single();
 
       if (newTokenError) {
-        toast({
-          title: "Erro ao gerar link",
-          description: newTokenError.message,
-          variant: "destructive",
-        });
-        return;
+        throw new Error(newTokenError.message);
       }
-      tokenData = newTokenData;
+      return newTokenData.token;
     }
-
-    const portalUrl = `${window.location.origin}/client/${tokenData.token}`;
     
-    await navigator.clipboard.writeText(portalUrl);
-    toast({
-      title: "Link copiado!",
-      description: "Link do portal do cliente foi copiado para área de transferência.",
-    });
+    return tokenData.token;
+  };
+
+  const generateClientPortalLink = async (clientId: string) => {
+    try {
+      const token = await ensureClientToken(clientId);
+      const portalUrl = `${window.location.origin}/client/${token}`;
+      
+      await navigator.clipboard.writeText(portalUrl);
+      toast({
+        title: "Link copiado!",
+        description: "Link do portal do cliente foi copiado para área de transferência.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao gerar link",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const openClientPortal = async (clientId: string) => {
-    // Primeiro verificar se já existe um token
-    let { data: tokenData, error: tokenError } = await supabase
-      .from('client_access_tokens')
-      .select('token')
-      .eq('client_id', clientId)
-      .single();
-
-    // Se não existir token, criar um novo
-    if (tokenError || !tokenData) {
-      const token = generateClientToken();
-      const expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
-      const { data: newTokenData, error: newTokenError } = await supabase
-        .from('client_access_tokens')
-        .insert([
-          {
-            client_id: clientId,
-            token: token,
-            expires_at: expiresAt.toISOString(),
-          }
-        ])
-        .select('token')
-        .single();
-
-      if (newTokenError) {
-        toast({
-          title: "Erro ao abrir portal",
-          description: newTokenError.message,
-          variant: "destructive",
-        });
-        return;
-      }
-      tokenData = newTokenData;
+    try {
+      const token = await ensureClientToken(clientId);
+      const portalUrl = `${window.location.origin}/client/${token}`;
+      window.open(portalUrl, '_blank');
+    } catch (error: any) {
+      toast({
+        title: "Erro ao abrir portal",
+        description: error.message,
+        variant: "destructive",
+      });
     }
-
-    const portalUrl = `${window.location.origin}/client/${tokenData.token}`;
-    window.open(portalUrl, '_blank');
   };
 
   return (
@@ -307,6 +357,77 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Dialog de Edição */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Editar Cliente</DialogTitle>
+              <DialogDescription>
+                Atualize os dados do cliente
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <Label htmlFor="edit_name">Nome completo *</Label>
+                <Input
+                  id="edit_name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit_email">E-mail</Label>
+                <Input
+                  id="edit_email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit_phone">Telefone (WhatsApp)</Label>
+                <Input
+                  id="edit_phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit_cpf_cnpj">CPF/CNPJ</Label>
+                <Input
+                  id="edit_cpf_cnpj"
+                  value={formData.cpf_cnpj}
+                  onChange={(e) => setFormData({...formData, cpf_cnpj: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit_address">Endereço</Label>
+                <Textarea
+                  id="edit_address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  placeholder="Endereço completo (opcional)"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  Atualizar Cliente
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {clients.length === 0 ? (
@@ -329,18 +450,40 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
           {clients.map((client) => (
             <Card key={client.id} className="hover:shadow-lg transition-shadow duration-200">
               <CardHeader>
-                <CardTitle className="text-lg">{client.name}</CardTitle>
-                <CardDescription>
-                  {client.email && (
-                    <div className="text-sm text-gray-600">{client.email}</div>
-                  )}
-                  {client.phone && (
-                    <div className="text-sm text-gray-600">{client.phone}</div>
-                  )}
-                  {client.cpf_cnpj && (
-                    <div className="text-sm text-gray-600">{client.cpf_cnpj}</div>
-                  )}
-                </CardDescription>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">{client.name}</CardTitle>
+                    <CardDescription>
+                      {client.email && (
+                        <div className="text-sm text-gray-600">{client.email}</div>
+                      )}
+                      {client.phone && (
+                        <div className="text-sm text-gray-600">{client.phone}</div>
+                      )}
+                      {client.cpf_cnpj && (
+                        <div className="text-sm text-gray-600">{client.cpf_cnpj}</div>
+                      )}
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(client)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(client.id, client.name)}
+                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {client.address && (

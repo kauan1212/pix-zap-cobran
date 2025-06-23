@@ -21,13 +21,15 @@ interface Client {
   phone: string;
 }
 
-interface RecurringPlan {
+interface Subscription {
   id: string;
   client_id: string;
   name: string;
   amount: number;
   description: string;
   frequency: 'weekly' | 'biweekly' | 'monthly';
+  start_date: string;
+  end_date: string | null;
   next_billing_date: string;
   is_active: boolean;
   created_at: string;
@@ -41,7 +43,7 @@ interface SubscriptionManagerProps {
 
 const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps) => {
   const { user } = useAuth();
-  const [recurringPlans, setRecurringPlans] = useState<RecurringPlan[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     client_id: '',
@@ -49,20 +51,22 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
     amount: '',
     description: '',
     frequency: 'monthly' as 'weekly' | 'biweekly' | 'monthly',
+    start_date: '',
+    end_date: '',
     next_billing_date: '',
   });
 
   useEffect(() => {
     if (user) {
-      loadRecurringPlans();
+      loadSubscriptions();
     }
   }, [user]);
 
-  const loadRecurringPlans = async () => {
+  const loadSubscriptions = async () => {
     if (!user) return;
 
     const { data, error } = await supabase
-      .from('recurring_plans')
+      .from('subscriptions')
       .select(`
         *,
         clients (
@@ -72,16 +76,22 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
           phone
         )
       `)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error loading recurring plans:', error);
+      console.error('Error loading subscriptions:', error);
+      toast({
+        title: "Erro ao carregar assinaturas",
+        description: error.message,
+        variant: "destructive",
+      });
     } else {
-      const typedPlans: RecurringPlan[] = (data || []).map(item => ({
+      const typedSubscriptions: Subscription[] = (data || []).map(item => ({
         ...item,
         frequency: item.frequency as 'weekly' | 'biweekly' | 'monthly'
       }));
-      setRecurringPlans(typedPlans);
+      setSubscriptions(typedSubscriptions);
     }
   };
 
@@ -90,8 +100,24 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
     
     if (!user) return;
 
+    // Calcular próxima data de cobrança baseada na frequência
+    const startDate = new Date(formData.start_date);
+    let nextBillingDate = new Date(startDate);
+    
+    switch (formData.frequency) {
+      case 'weekly':
+        nextBillingDate.setDate(nextBillingDate.getDate() + 7);
+        break;
+      case 'biweekly':
+        nextBillingDate.setDate(nextBillingDate.getDate() + 14);
+        break;
+      case 'monthly':
+        nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+        break;
+    }
+
     const { data, error } = await supabase
-      .from('recurring_plans')
+      .from('subscriptions')
       .insert([
         {
           user_id: user.id,
@@ -100,7 +126,9 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
           amount: parseFloat(formData.amount),
           description: formData.description,
           frequency: formData.frequency,
-          next_billing_date: formData.next_billing_date,
+          start_date: formData.start_date,
+          end_date: formData.end_date || null,
+          next_billing_date: nextBillingDate.toISOString().split('T')[0],
         }
       ])
       .select()
@@ -120,7 +148,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
       });
       resetForm();
       setIsDialogOpen(false);
-      loadRecurringPlans();
+      loadSubscriptions();
       onDataChange();
     }
   };
@@ -132,15 +160,17 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
       amount: '',
       description: '',
       frequency: 'monthly',
+      start_date: '',
+      end_date: '',
       next_billing_date: '',
     });
   };
 
-  const togglePlanStatus = async (planId: string, isActive: boolean) => {
+  const toggleSubscriptionStatus = async (subscriptionId: string, isActive: boolean) => {
     const { error } = await supabase
-      .from('recurring_plans')
+      .from('subscriptions')
       .update({ is_active: isActive })
-      .eq('id', planId);
+      .eq('id', subscriptionId);
 
     if (error) {
       toast({
@@ -151,17 +181,17 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
     } else {
       toast({
         title: "Assinatura atualizada",
-        description: `Assinatura ${isActive ? 'ativada' : 'desativada'} com sucesso.`,
+        description: `Assinatura ${isActive ? 'ativ ada' : 'desativada'} com sucesso.`,
       });
-      loadRecurringPlans();
+      loadSubscriptions();
     }
   };
 
-  const deletePlan = async (planId: string) => {
+  const deleteSubscription = async (subscriptionId: string) => {
     const { error } = await supabase
-      .from('recurring_plans')
+      .from('subscriptions')
       .delete()
-      .eq('id', planId);
+      .eq('id', subscriptionId);
 
     if (error) {
       toast({
@@ -174,7 +204,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
         title: "Assinatura excluída",
         description: "Assinatura removida com sucesso.",
       });
-      loadRecurringPlans();
+      loadSubscriptions();
       onDataChange();
     }
   };
@@ -186,6 +216,15 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
       case 'monthly': return 'Mensal';
       default: return frequency;
     }
+  };
+
+  const formatDateRange = (startDate: string, endDate: string | null) => {
+    const start = new Date(startDate).toLocaleDateString('pt-BR');
+    if (!endDate) {
+      return `A partir de ${start}`;
+    }
+    const end = new Date(endDate).toLocaleDateString('pt-BR');
+    return `${start} até ${end}`;
   };
 
   return (
@@ -274,15 +313,27 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
                 </Select>
               </div>
               
-              <div>
-                <Label htmlFor="next_billing_date">Próxima Data de Cobrança *</Label>
-                <Input
-                  id="next_billing_date"
-                  type="date"
-                  value={formData.next_billing_date}
-                  onChange={(e) => setFormData({...formData, next_billing_date: e.target.value})}
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="start_date">Data Inicial *</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="end_date">Data Final (opcional)</Label>
+                  <Input
+                    id="end_date"
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                  />
+                </div>
               </div>
               
               <div>
@@ -313,7 +364,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
         </Dialog>
       </div>
 
-      {recurringPlans.length === 0 ? (
+      {subscriptions.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
             <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -330,23 +381,23 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
         </Card>
       ) : (
         <div className="space-y-4">
-          {recurringPlans.map((plan) => (
-            <Card key={plan.id} className="hover:shadow-lg transition-shadow duration-200">
+          {subscriptions.map((subscription) => (
+            <Card key={subscription.id} className="hover:shadow-lg transition-shadow duration-200">
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-lg">{plan.name}</CardTitle>
+                    <CardTitle className="text-lg">{subscription.name}</CardTitle>
                     <CardDescription className="text-sm text-gray-600 mt-1">
-                      {plan.clients?.name} • {plan.description}
+                      {subscription.clients?.name} • {subscription.description}
                     </CardDescription>
                   </div>
                   <div className="text-right">
                     <p className="text-xl font-bold text-gray-900">
-                      R$ {plan.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {subscription.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     <div className="flex gap-2 mt-1">
-                      <Badge variant={plan.is_active ? "default" : "secondary"}>
-                        {plan.is_active ? 'Ativa' : 'Inativa'}
+                      <Badge variant={subscription.is_active ? "default" : "secondary"}>
+                        {subscription.is_active ? 'Ativa' : 'Inativa'}
                       </Badge>
                     </div>
                   </div>
@@ -357,23 +408,29 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
-                      <span>{getFrequencyText(plan.frequency)}</span>
+                      <span>{getFrequencyText(subscription.frequency)}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
-                      <span>Próxima: {new Date(plan.next_billing_date).toLocaleDateString('pt-BR')}</span>
+                      <span>Próxima: {new Date(subscription.next_billing_date).toLocaleDateString('pt-BR')}</span>
                     </div>
                   </div>
+                </div>
+                
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600">
+                    <strong>Período:</strong> {formatDateRange(subscription.start_date, subscription.end_date)}
+                  </p>
                 </div>
                 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
                       <Switch
-                        checked={plan.is_active}
-                        onCheckedChange={(checked) => togglePlanStatus(plan.id, checked)}
+                        checked={subscription.is_active}
+                        onCheckedChange={(checked) => toggleSubscriptionStatus(subscription.id, checked)}
                       />
-                      <span className="text-sm">{plan.is_active ? 'Ativa' : 'Inativa'}</span>
+                      <span className="text-sm">{subscription.is_active ? 'Ativa' : 'Inativa'}</span>
                     </div>
                   </div>
                   
@@ -381,7 +438,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => deletePlan(plan.id)}
+                      onClick={() => deleteSubscription(subscription.id)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="w-4 h-4" />
