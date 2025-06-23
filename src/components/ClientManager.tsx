@@ -63,12 +63,21 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
     }
   };
 
+  const generateClientToken = (length: number = 32): string => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) return;
 
-    const { data, error } = await supabase
+    const { data: clientData, error: clientError } = await supabase
       .from('clients')
       .insert([
         {
@@ -79,22 +88,43 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
       .select()
       .single();
 
-    if (error) {
+    if (clientError) {
       toast({
         title: "Erro ao criar cliente",
-        description: error.message,
+        description: clientError.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Cliente criado!",
-        description: `Cliente ${formData.name} foi criado com sucesso.`,
-      });
-      resetForm();
-      setIsDialogOpen(false);
-      loadClients();
-      onDataChange();
+      return;
     }
+
+    // Criar token de acesso para o cliente
+    const token = generateClientToken();
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1); // Token válido por 1 ano
+
+    const { error: tokenError } = await supabase
+      .from('client_access_tokens')
+      .insert([
+        {
+          client_id: clientData.id,
+          token: token,
+          expires_at: expiresAt.toISOString(),
+        }
+      ]);
+
+    if (tokenError) {
+      console.error('Erro ao criar token:', tokenError);
+      // Não bloquear a criação do cliente por causa do token
+    }
+
+    toast({
+      title: "Cliente criado!",
+      description: `Cliente ${formData.name} foi criado com sucesso.`,
+    });
+    resetForm();
+    setIsDialogOpen(false);
+    loadClients();
+    onDataChange();
   };
 
   const resetForm = () => {
@@ -108,22 +138,43 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
   };
 
   const generateClientPortalLink = async (clientId: string) => {
-    const { data, error } = await supabase
+    // Primeiro verificar se já existe um token
+    let { data: tokenData, error: tokenError } = await supabase
       .from('client_access_tokens')
       .select('token')
       .eq('client_id', clientId)
       .single();
 
-    if (error) {
-      toast({
-        title: "Erro ao gerar link",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
+    // Se não existir token, criar um novo
+    if (tokenError || !tokenData) {
+      const token = generateClientToken();
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+      const { data: newTokenData, error: newTokenError } = await supabase
+        .from('client_access_tokens')
+        .insert([
+          {
+            client_id: clientId,
+            token: token,
+            expires_at: expiresAt.toISOString(),
+          }
+        ])
+        .select('token')
+        .single();
+
+      if (newTokenError) {
+        toast({
+          title: "Erro ao gerar link",
+          description: newTokenError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      tokenData = newTokenData;
     }
 
-    const portalUrl = `${window.location.origin}/client/${data.token}`;
+    const portalUrl = `${window.location.origin}/client/${tokenData.token}`;
     
     await navigator.clipboard.writeText(portalUrl);
     toast({
@@ -133,22 +184,43 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
   };
 
   const openClientPortal = async (clientId: string) => {
-    const { data, error } = await supabase
+    // Primeiro verificar se já existe um token
+    let { data: tokenData, error: tokenError } = await supabase
       .from('client_access_tokens')
       .select('token')
       .eq('client_id', clientId)
       .single();
 
-    if (error) {
-      toast({
-        title: "Erro ao abrir portal",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
+    // Se não existir token, criar um novo
+    if (tokenError || !tokenData) {
+      const token = generateClientToken();
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+      const { data: newTokenData, error: newTokenError } = await supabase
+        .from('client_access_tokens')
+        .insert([
+          {
+            client_id: clientId,
+            token: token,
+            expires_at: expiresAt.toISOString(),
+          }
+        ])
+        .select('token')
+        .single();
+
+      if (newTokenError) {
+        toast({
+          title: "Erro ao abrir portal",
+          description: newTokenError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      tokenData = newTokenData;
     }
 
-    const portalUrl = `${window.location.origin}/client/${data.token}`;
+    const portalUrl = `${window.location.origin}/client/${tokenData.token}`;
     window.open(portalUrl, '_blank');
   };
 
