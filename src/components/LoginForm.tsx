@@ -248,7 +248,7 @@ const LoginForm = () => {
                         ) : (
                           <Eye className="h-4 w-4" />
                         )}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   
