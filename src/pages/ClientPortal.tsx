@@ -105,22 +105,9 @@ const ClientPortal = () => {
         })));
       }
 
-      // Buscar chave PIX do proprietário da conta
+      // Buscar chave PIX atualizada do proprietário da conta
       if (clientData.user_id) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('pix_key')
-          .eq('id', clientData.user_id)
-          .single();
-
-        console.log('Profile PIX key:', profileData);
-
-        if (profileData?.pix_key) {
-          setPixKey(profileData.pix_key);
-        } else {
-          // Usar email como chave PIX padrão se não configurada
-          setPixKey(clientData.email || 'contato@exemplo.com');
-        }
+        await loadOwnerPixKey(clientData.user_id);
       }
 
     } catch (err) {
@@ -131,8 +118,31 @@ const ClientPortal = () => {
     }
   };
 
+  const loadOwnerPixKey = async (userId: string) => {
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('pix_key')
+        .eq('id', userId)
+        .single();
+
+      console.log('Profile PIX key:', profileData);
+
+      if (!error && profileData?.pix_key) {
+        setPixKey(profileData.pix_key);
+      } else {
+        // Buscar email do usuário como fallback
+        const { data: userData } = await supabase.auth.admin.getUserById(userId);
+        setPixKey(userData?.user?.email || 'Chave PIX não configurada');
+      }
+    } catch (error) {
+      console.error('Error loading PIX key:', error);
+      setPixKey('Chave PIX não configurada');
+    }
+  };
+
   const copyPixKey = () => {
-    if (pixKey) {
+    if (pixKey && pixKey !== 'Chave PIX não configurada') {
       navigator.clipboard.writeText(pixKey);
       toast({
         title: "Chave PIX copiada!",
@@ -277,8 +287,13 @@ const ClientPortal = () => {
               <div className="text-lg font-bold text-blue-900 font-mono mb-2 break-all">
                 {pixKey}
               </div>
-              <Button onClick={copyPixKey} size="sm" className="w-full">
-                Copiar Chave PIX
+              <Button 
+                onClick={copyPixKey} 
+                size="sm" 
+                className="w-full"
+                disabled={pixKey === 'Chave PIX não configurada'}
+              >
+                {pixKey === 'Chave PIX não configurada' ? 'Chave não configurada' : 'Copiar Chave PIX'}
               </Button>
             </CardContent>
           </Card>
@@ -334,9 +349,13 @@ const ClientPortal = () => {
                       <p className="text-sm text-blue-800 mb-4">
                         3. Envie o comprovante para confirmação
                       </p>
-                      <Button onClick={copyPixKey} className="w-full">
+                      <Button 
+                        onClick={copyPixKey} 
+                        className="w-full"
+                        disabled={pixKey === 'Chave PIX não configurada'}
+                      >
                         <Copy className="w-4 h-4 mr-2" />
-                        Copiar Chave PIX
+                        {pixKey === 'Chave PIX não configurada' ? 'Chave não configurada' : 'Copiar Chave PIX'}
                       </Button>
                     </div>
                   </CardContent>

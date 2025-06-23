@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -26,22 +25,27 @@ const PixGenerator = ({ billing, onClose }: PixGeneratorProps) => {
   const [pixCode, setPixCode] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [pixKey, setPixKey] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadPixKeyAndGenerate();
   }, [billing, user]);
 
   const loadPixKeyAndGenerate = async () => {
+    if (!user) return;
+
+    setLoading(true);
     try {
-      // Carregar chave PIX do usuário
-      const { data: profileData } = await supabase
+      // Carregar chave PIX atualizada do usuário
+      const { data: profileData, error } = await supabase
         .from('profiles')
         .select('pix_key')
-        .eq('id', user?.id)
+        .eq('id', user.id)
         .single();
 
-      let userPixKey = '15991653601'; // PIX padrão
-      if (profileData?.pix_key) {
+      let userPixKey = user.email || ''; // Fallback para email
+      
+      if (!error && profileData?.pix_key) {
         userPixKey = profileData.pix_key;
       }
 
@@ -49,7 +53,12 @@ const PixGenerator = ({ billing, onClose }: PixGeneratorProps) => {
       generatePixCode(userPixKey);
     } catch (error) {
       console.error('Error loading PIX key:', error);
-      generatePixCode('15991653601'); // Usar PIX padrão em caso de erro
+      // Em caso de erro, usa o email como fallback
+      const fallbackKey = user.email || '';
+      setPixKey(fallbackKey);
+      generatePixCode(fallbackKey);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -122,6 +131,19 @@ Obrigado!`;
     window.open(whatsappUrl, '_blank');
   };
 
+  if (loading) {
+    return (
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[500px]">
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando informações PIX...</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
@@ -161,7 +183,7 @@ Obrigado!`;
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Chave PIX:</span>
-                  <span className="font-mono text-sm font-bold text-blue-600">
+                  <span className="font-mono text-sm font-bold text-blue-600 break-all">
                     {pixKey}
                   </span>
                 </div>

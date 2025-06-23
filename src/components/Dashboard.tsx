@@ -1,115 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/contexts/AuthContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { PlusCircle, Users, FileText, DollarSign, TrendingUp, Calendar } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { LogOut, Users, Receipt, CreditCard, Settings, Repeat } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import ClientManager from './ClientManager';
 import BillingManager from './BillingManager';
-import { toast } from '@/hooks/use-toast';
-
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-}
-
-interface Billing {
-  id: string;
-  client_id: string;
-  amount: number;
-  description: string;
-  due_date: string;
-  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
-  created_at: string;
-  clients?: Client;
-}
+import PixKeyManager from './PixKeyManager';
+import RecurringPlansManager from './RecurringPlansManager';
+import SubscriptionManager from './SubscriptionManager';
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [billings, setBillings] = useState<Billing[]>([]);
-  const [activeTab, setActiveTab] = useState('overview');
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('clients');
 
-  useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
-
-  const loadData = async () => {
-    await Promise.all([loadClients(), loadBillings()]);
-  };
-
-  const loadClients = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('clients')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast({
+          title: "Erro ao sair",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Erro ao carregar clientes",
-        description: error.message,
+        title: "Erro inesperado",
+        description: "Ocorreu um erro ao tentar sair da conta.",
         variant: "destructive",
       });
-    } else {
-      setClients(data || []);
     }
   };
-
-  const loadBillings = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('billings')
-      .select(`
-        *,
-        clients (
-          id,
-          name,
-          email,
-          phone
-        )
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      toast({
-        title: "Erro ao carregar cobranças",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setBillings((data as any[])?.map(item => ({
-        ...item,
-        status: item.status as 'pending' | 'paid' | 'overdue' | 'cancelled'
-      })) || []);
-    }
-  };
-
-  const getCurrentMonthBillings = () => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
-    return billings.filter(billing => {
-      const billingDate = new Date(billing.created_at);
-      return billingDate.getMonth() === currentMonth && billingDate.getFullYear() === currentYear;
-    });
-  };
-
-  const monthlyBillings = getCurrentMonthBillings();
-  const totalAmount = monthlyBillings.reduce((sum, billing) => sum + billing.amount, 0);
-  const paidAmount = monthlyBillings.filter(b => b.status === 'paid').reduce((sum, billing) => sum + billing.amount, 0);
-  const pendingAmount = monthlyBillings.filter(b => b.status === 'pending').reduce((sum, billing) => sum + billing.amount, 0);
-  const overdueAmount = monthlyBillings.filter(b => b.status === 'overdue').reduce((sum, billing) => sum + billing.amount, 0);
-
-  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -122,16 +46,14 @@ const Dashboard = () => {
                 <span className="text-white font-bold text-sm">₿</span>
               </div>
               <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                CobrançaPro
+                PIX Zap Cobrança
               </span>
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user.user_metadata?.full_name || user.email}</p>
-                <p className="text-xs text-gray-500">{user.email}</p>
-              </div>
-              <Button onClick={logout} variant="outline" size="sm">
+              <span className="text-gray-700">Olá, {user?.email}</span>
+              <Button variant="outline" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
                 Sair
               </Button>
             </div>
@@ -140,159 +62,50 @@ const Dashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation */}
-        <nav className="mb-8">
-          <div className="flex space-x-1 bg-white p-1 rounded-lg shadow-sm">
-            {[
-              { id: 'overview', label: 'Overview', icon: TrendingUp },
-              { id: 'clients', label: 'Clientes', icon: Users },
-              { id: 'billings', label: 'Cobranças', icon: FileText },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="clients" className="flex items-center space-x-2">
+              <Users className="w-4 h-4" />
+              <span>Clientes</span>
+            </TabsTrigger>
+            <TabsTrigger value="billings" className="flex items-center space-x-2">
+              <Receipt className="w-4 h-4" />
+              <span>Cobranças</span>
+            </TabsTrigger>
+            <TabsTrigger value="recurring" className="flex items-center space-x-2">
+              <Repeat className="w-4 h-4" />
+              <span>Planos</span>
+            </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="flex items-center space-x-2">
+              <CreditCard className="w-4 h-4" />
+              <span>Assinaturas</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center space-x-2">
+              <Settings className="w-4 h-4" />
+              <span>PIX</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Content */}
-        {activeTab === 'overview' && (
-          <div className="space-y-8">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="hover:shadow-lg transition-shadow duration-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total do Mês</CardTitle>
-                  <DollarSign className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">
-                    R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {monthlyBillings.length} cobranças geradas
-                  </p>
-                </CardContent>
-              </Card>
+          <TabsContent value="clients">
+            <ClientManager />
+          </TabsContent>
 
-              <Card className="hover:shadow-lg transition-shadow duration-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Recebido</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    R$ {paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {monthlyBillings.filter(b => b.status === 'paid').length} pagas
-                  </p>
-                </CardContent>
-              </Card>
+          <TabsContent value="billings">
+            <BillingManager />
+          </TabsContent>
 
-              <Card className="hover:shadow-lg transition-shadow duration-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Pendente</CardTitle>
-                  <Calendar className="h-4 w-4 text-yellow-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">
-                    R$ {pendingAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {monthlyBillings.filter(b => b.status === 'pending').length} pendentes
-                  </p>
-                </CardContent>
-              </Card>
+          <TabsContent value="recurring">
+            <RecurringPlansManager />
+          </TabsContent>
 
-              <Card className="hover:shadow-lg transition-shadow duration-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Em Atraso</CardTitle>
-                  <FileText className="h-4 w-4 text-red-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">
-                    R$ {overdueAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {monthlyBillings.filter(b => b.status === 'overdue').length} em atraso
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="subscriptions">
+            <SubscriptionManager />
+          </TabsContent>
 
-            {/* Recent Billings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Cobranças Recentes</CardTitle>
-                <CardDescription>Suas últimas cobranças geradas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {billings.length === 0 ? (
-                  <div className="text-center py-8">
-                    <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-4">Nenhuma cobrança gerada ainda</p>
-                    <Button onClick={() => setActiveTab('billings')} className="bg-blue-600 hover:bg-blue-700">
-                      <PlusCircle className="w-4 h-4 mr-2" />
-                      Criar primeira cobrança
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {billings.slice(0, 5).map((billing) => (
-                      <div key={billing.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">{billing.clients?.name}</p>
-                          <p className="text-sm text-gray-500">{billing.description}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">
-                            R$ {billing.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                          <Badge 
-                            variant={
-                              billing.status === 'paid' ? 'default' : 
-                              billing.status === 'pending' ? 'secondary' :
-                              billing.status === 'overdue' ? 'destructive' : 'outline'
-                            }
-                            className="text-xs"
-                          >
-                            {billing.status === 'paid' ? 'Paga' : 
-                             billing.status === 'pending' ? 'Pendente' :
-                             billing.status === 'overdue' ? 'Vencida' : 'Cancelada'}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === 'clients' && (
-          <ClientManager onDataChange={loadData} />
-        )}
-
-        {activeTab === 'billings' && (
-          <BillingManager 
-            clients={clients} 
-            onDataChange={loadData}
-          />
-        )}
+          <TabsContent value="settings">
+            <PixKeyManager />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
