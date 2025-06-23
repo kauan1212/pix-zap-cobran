@@ -6,11 +6,6 @@ import Dashboard from '@/components/Dashboard';
 
 const AppContent = () => {
   const { user, loading } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
-
-  const toggleMode = () => {
-    setIsLogin(!isLogin);
-  };
 
   if (loading) {
     return (
@@ -27,7 +22,7 @@ const AppContent = () => {
     return <Dashboard />;
   }
 
-  return <LoginForm onToggleMode={toggleMode} isLogin={isLogin} />;
+  return <LoginForm />;
 };
 
 const Index = () => {

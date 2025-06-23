@@ -21,15 +21,13 @@ interface Client {
   phone: string;
 }
 
-interface Subscription {
+interface RecurringPlan {
   id: string;
   client_id: string;
   name: string;
   amount: number;
   description: string;
   frequency: 'weekly' | 'biweekly' | 'monthly';
-  start_date: string;
-  end_date: string | null;
   next_billing_date: string;
   is_active: boolean;
   created_at: string;
@@ -43,7 +41,7 @@ interface SubscriptionManagerProps {
 
 const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps) => {
   const { user } = useAuth();
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [subscriptions, setSubscriptions] = useState<RecurringPlan[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     client_id: '',
@@ -51,8 +49,6 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
     amount: '',
     description: '',
     frequency: 'monthly' as 'weekly' | 'biweekly' | 'monthly',
-    start_date: '',
-    end_date: '',
     next_billing_date: '',
   });
 
@@ -66,7 +62,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
     if (!user) return;
 
     const { data, error } = await supabase
-      .from('subscriptions')
+      .from('recurring_plans')
       .select(`
         *,
         clients (
@@ -87,7 +83,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
         variant: "destructive",
       });
     } else {
-      const typedSubscriptions: Subscription[] = (data || []).map(item => ({
+      const typedSubscriptions: RecurringPlan[] = (data || []).map(item => ({
         ...item,
         frequency: item.frequency as 'weekly' | 'biweekly' | 'monthly'
       }));
@@ -101,8 +97,8 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
     if (!user) return;
 
     // Calcular próxima data de cobrança baseada na frequência
-    const startDate = new Date(formData.start_date);
-    let nextBillingDate = new Date(startDate);
+    const today = new Date();
+    let nextBillingDate = new Date(today);
     
     switch (formData.frequency) {
       case 'weekly':
@@ -117,7 +113,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
     }
 
     const { data, error } = await supabase
-      .from('subscriptions')
+      .from('recurring_plans')
       .insert([
         {
           user_id: user.id,
@@ -126,8 +122,6 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
           amount: parseFloat(formData.amount),
           description: formData.description,
           frequency: formData.frequency,
-          start_date: formData.start_date,
-          end_date: formData.end_date || null,
           next_billing_date: nextBillingDate.toISOString().split('T')[0],
         }
       ])
@@ -160,15 +154,13 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
       amount: '',
       description: '',
       frequency: 'monthly',
-      start_date: '',
-      end_date: '',
       next_billing_date: '',
     });
   };
 
   const toggleSubscriptionStatus = async (subscriptionId: string, isActive: boolean) => {
     const { error } = await supabase
-      .from('subscriptions')
+      .from('recurring_plans')
       .update({ is_active: isActive })
       .eq('id', subscriptionId);
 
@@ -181,7 +173,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
     } else {
       toast({
         title: "Assinatura atualizada",
-        description: `Assinatura ${isActive ? 'ativ ada' : 'desativada'} com sucesso.`,
+        description: `Assinatura ${isActive ? 'ativada' : 'desativada'} com sucesso.`,
       });
       loadSubscriptions();
     }
@@ -189,7 +181,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
 
   const deleteSubscription = async (subscriptionId: string) => {
     const { error } = await supabase
-      .from('subscriptions')
+      .from('recurring_plans')
       .delete()
       .eq('id', subscriptionId);
 
@@ -216,15 +208,6 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
       case 'monthly': return 'Mensal';
       default: return frequency;
     }
-  };
-
-  const formatDateRange = (startDate: string, endDate: string | null) => {
-    const start = new Date(startDate).toLocaleDateString('pt-BR');
-    if (!endDate) {
-      return `A partir de ${start}`;
-    }
-    const end = new Date(endDate).toLocaleDateString('pt-BR');
-    return `${start} até ${end}`;
   };
 
   return (
@@ -313,29 +296,6 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
                 </Select>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="start_date">Data Inicial *</Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({...formData, start_date: e.target.value})}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="end_date">Data Final (opcional)</Label>
-                  <Input
-                    id="end_date"
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({...formData, end_date: e.target.value})}
-                  />
-                </div>
-              </div>
-              
               <div>
                 <Label htmlFor="description">Descrição da Cobrança *</Label>
                 <Textarea
@@ -415,12 +375,6 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
                       <span>Próxima: {new Date(subscription.next_billing_date).toLocaleDateString('pt-BR')}</span>
                     </div>
                   </div>
-                </div>
-                
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600">
-                    <strong>Período:</strong> {formatDateRange(subscription.start_date, subscription.end_date)}
-                  </p>
                 </div>
                 
                 <div className="flex items-center justify-between">
