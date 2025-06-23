@@ -21,15 +21,14 @@ interface Client {
   phone: string;
 }
 
-interface Subscription {
+interface RecurringPlan {
   id: string;
   client_id: string;
   name: string;
   amount: number;
   description: string;
   frequency: 'weekly' | 'biweekly' | 'monthly';
-  start_date: string;
-  end_date?: string;
+  next_billing_date: string;
   is_active: boolean;
   created_at: string;
   clients?: Client;
@@ -42,7 +41,7 @@ interface SubscriptionManagerProps {
 
 const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps) => {
   const { user } = useAuth();
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [recurringPlans, setRecurringPlans] = useState<RecurringPlan[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     client_id: '',
@@ -50,21 +49,20 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
     amount: '',
     description: '',
     frequency: 'monthly' as 'weekly' | 'biweekly' | 'monthly',
-    start_date: '',
-    end_date: '',
+    next_billing_date: '',
   });
 
   useEffect(() => {
     if (user) {
-      loadSubscriptions();
+      loadRecurringPlans();
     }
   }, [user]);
 
-  const loadSubscriptions = async () => {
+  const loadRecurringPlans = async () => {
     if (!user) return;
 
     const { data, error } = await supabase
-      .from('subscriptions')
+      .from('recurring_plans')
       .select(`
         *,
         clients (
@@ -77,13 +75,13 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error loading subscriptions:', error);
+      console.error('Error loading recurring plans:', error);
     } else {
-      const typedSubscriptions: Subscription[] = (data || []).map(item => ({
+      const typedPlans: RecurringPlan[] = (data || []).map(item => ({
         ...item,
         frequency: item.frequency as 'weekly' | 'biweekly' | 'monthly'
       }));
-      setSubscriptions(typedSubscriptions);
+      setRecurringPlans(typedPlans);
     }
   };
 
@@ -93,7 +91,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
     if (!user) return;
 
     const { data, error } = await supabase
-      .from('subscriptions')
+      .from('recurring_plans')
       .insert([
         {
           user_id: user.id,
@@ -102,8 +100,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
           amount: parseFloat(formData.amount),
           description: formData.description,
           frequency: formData.frequency,
-          start_date: formData.start_date,
-          end_date: formData.end_date || null,
+          next_billing_date: formData.next_billing_date,
         }
       ])
       .select()
@@ -123,7 +120,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
       });
       resetForm();
       setIsDialogOpen(false);
-      loadSubscriptions();
+      loadRecurringPlans();
       onDataChange();
     }
   };
@@ -135,16 +132,15 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
       amount: '',
       description: '',
       frequency: 'monthly',
-      start_date: '',
-      end_date: '',
+      next_billing_date: '',
     });
   };
 
-  const toggleSubscriptionStatus = async (subscriptionId: string, isActive: boolean) => {
+  const togglePlanStatus = async (planId: string, isActive: boolean) => {
     const { error } = await supabase
-      .from('subscriptions')
+      .from('recurring_plans')
       .update({ is_active: isActive })
-      .eq('id', subscriptionId);
+      .eq('id', planId);
 
     if (error) {
       toast({
@@ -157,15 +153,15 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
         title: "Assinatura atualizada",
         description: `Assinatura ${isActive ? 'ativada' : 'desativada'} com sucesso.`,
       });
-      loadSubscriptions();
+      loadRecurringPlans();
     }
   };
 
-  const deleteSubscription = async (subscriptionId: string) => {
+  const deletePlan = async (planId: string) => {
     const { error } = await supabase
-      .from('subscriptions')
+      .from('recurring_plans')
       .delete()
-      .eq('id', subscriptionId);
+      .eq('id', planId);
 
     if (error) {
       toast({
@@ -178,7 +174,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
         title: "Assinatura excluída",
         description: "Assinatura removida com sucesso.",
       });
-      loadSubscriptions();
+      loadRecurringPlans();
       onDataChange();
     }
   };
@@ -190,11 +186,6 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
       case 'monthly': return 'Mensal';
       default: return frequency;
     }
-  };
-
-  const isSubscriptionExpired = (endDate?: string) => {
-    if (!endDate) return false;
-    return new Date(endDate) < new Date();
   };
 
   return (
@@ -283,28 +274,15 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
                 </Select>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="start_date">Data Inicial *</Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({...formData, start_date: e.target.value})}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="end_date">Data Final</Label>
-                  <Input
-                    id="end_date"
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({...formData, end_date: e.target.value})}
-                    placeholder="Deixe vazio para sem fim"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="next_billing_date">Próxima Data de Cobrança *</Label>
+                <Input
+                  id="next_billing_date"
+                  type="date"
+                  value={formData.next_billing_date}
+                  onChange={(e) => setFormData({...formData, next_billing_date: e.target.value})}
+                  required
+                />
               </div>
               
               <div>
@@ -335,7 +313,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
         </Dialog>
       </div>
 
-      {subscriptions.length === 0 ? (
+      {recurringPlans.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
             <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -352,27 +330,24 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
         </Card>
       ) : (
         <div className="space-y-4">
-          {subscriptions.map((subscription) => (
-            <Card key={subscription.id} className="hover:shadow-lg transition-shadow duration-200">
+          {recurringPlans.map((plan) => (
+            <Card key={plan.id} className="hover:shadow-lg transition-shadow duration-200">
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-lg">{subscription.name}</CardTitle>
+                    <CardTitle className="text-lg">{plan.name}</CardTitle>
                     <CardDescription className="text-sm text-gray-600 mt-1">
-                      {subscription.clients?.name} • {subscription.description}
+                      {plan.clients?.name} • {plan.description}
                     </CardDescription>
                   </div>
                   <div className="text-right">
                     <p className="text-xl font-bold text-gray-900">
-                      R$ {subscription.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {plan.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     <div className="flex gap-2 mt-1">
-                      <Badge variant={subscription.is_active ? "default" : "secondary"}>
-                        {subscription.is_active ? 'Ativa' : 'Inativa'}
+                      <Badge variant={plan.is_active ? "default" : "secondary"}>
+                        {plan.is_active ? 'Ativa' : 'Inativa'}
                       </Badge>
-                      {isSubscriptionExpired(subscription.end_date) && (
-                        <Badge variant="destructive">Expirada</Badge>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -382,18 +357,12 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
-                      <span>{getFrequencyText(subscription.frequency)}</span>
+                      <span>{getFrequencyText(plan.frequency)}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
-                      <span>Início: {new Date(subscription.start_date).toLocaleDateString('pt-BR')}</span>
+                      <span>Próxima: {new Date(plan.next_billing_date).toLocaleDateString('pt-BR')}</span>
                     </div>
-                    {subscription.end_date && (
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="w-4 h-4" />
-                        <span>Fim: {new Date(subscription.end_date).toLocaleDateString('pt-BR')}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
                 
@@ -401,11 +370,10 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
                       <Switch
-                        checked={subscription.is_active}
-                        onCheckedChange={(checked) => toggleSubscriptionStatus(subscription.id, checked)}
-                        disabled={isSubscriptionExpired(subscription.end_date)}
+                        checked={plan.is_active}
+                        onCheckedChange={(checked) => togglePlanStatus(plan.id, checked)}
                       />
-                      <span className="text-sm">{subscription.is_active ? 'Ativa' : 'Inativa'}</span>
+                      <span className="text-sm">{plan.is_active ? 'Ativa' : 'Inativa'}</span>
                     </div>
                   </div>
                   
@@ -413,7 +381,7 @@ const SubscriptionManager = ({ clients, onDataChange }: SubscriptionManagerProps
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => deleteSubscription(subscription.id)}
+                      onClick={() => deletePlan(plan.id)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="w-4 h-4" />
