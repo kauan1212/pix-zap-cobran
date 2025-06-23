@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,7 +48,7 @@ const ClientPortal = () => {
 
       console.log('Loading client data for token:', token);
 
-      // Primeiro, buscar o token e validar
+      // Buscar o token e validar
       const { data: tokenData, error: tokenError } = await supabase
         .from('client_access_tokens')
         .select('client_id, expires_at')
@@ -99,7 +98,6 @@ const ClientPortal = () => {
 
       if (billingsError) {
         console.error('Error loading billings:', billingsError);
-        // Não definir erro aqui, apenas mostrar array vazio
       } else {
         setBillings((billingsData || []).map(item => ({
           ...item,
@@ -120,8 +118,8 @@ const ClientPortal = () => {
         if (profileData?.pix_key) {
           setPixKey(profileData.pix_key);
         } else {
-          // Usar email do cliente como chave PIX padrão se não configurada
-          setPixKey(clientData.email || 'pix@exemplo.com');
+          // Usar email como chave PIX padrão se não configurada
+          setPixKey(clientData.email || 'contato@exemplo.com');
         }
       }
 
@@ -215,7 +213,7 @@ const ClientPortal = () => {
                 <span className="text-white font-bold text-sm">₿</span>
               </div>
               <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                CobrançaPro
+                PIX Zap Cobrança
               </span>
             </div>
             
