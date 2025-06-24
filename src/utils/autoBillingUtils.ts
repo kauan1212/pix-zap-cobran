@@ -7,7 +7,17 @@ export const generateBillingsForPlan = (plan: AutoBillingPlan, userId: string) =
   const endDate = new Date(plan.end_date);
   let currentDate = new Date(startDate);
 
-  while (currentDate <= endDate) {
+  // Validate dates
+  if (startDate >= endDate) {
+    console.error('Invalid date range: start date must be before end date');
+    return [];
+  }
+
+  // Prevent infinite loops by limiting iterations
+  let iterations = 0;
+  const maxIterations = 1000; // Limit to prevent infinite loops
+
+  while (currentDate <= endDate && iterations < maxIterations) {
     billings.push({
       user_id: userId,
       client_id: plan.client_id,
@@ -15,20 +25,32 @@ export const generateBillingsForPlan = (plan: AutoBillingPlan, userId: string) =
       description: plan.description,
       due_date: currentDate.toISOString().split('T')[0],
       auto_billing_plan_id: plan.id,
+      status: 'pending'
     });
 
     // Calculate next date based on frequency
+    const nextDate = new Date(currentDate);
     switch (plan.frequency) {
       case 'weekly':
-        currentDate.setDate(currentDate.getDate() + 7);
+        nextDate.setDate(nextDate.getDate() + 7);
         break;
       case 'biweekly':
-        currentDate.setDate(currentDate.getDate() + 14);
+        nextDate.setDate(nextDate.getDate() + 14);
         break;
       case 'monthly':
-        currentDate.setMonth(currentDate.getMonth() + 1);
+        nextDate.setMonth(nextDate.getMonth() + 1);
         break;
+      default:
+        console.error('Invalid frequency:', plan.frequency);
+        return billings;
     }
+    
+    currentDate = nextDate;
+    iterations++;
+  }
+
+  if (iterations >= maxIterations) {
+    console.warn('Maximum iterations reached while generating billings');
   }
 
   return billings;
@@ -46,11 +68,16 @@ export const getFrequencyText = (frequency: string) => {
 export const sendNotificationToClient = async (clientId: string, billingCount: number, supabase: any) => {
   try {
     // Get client token
-    const { data: tokenData } = await supabase
+    const { data: tokenData, error } = await supabase
       .from('client_access_tokens')
       .select('token')
       .eq('client_id', clientId)
       .single();
+
+    if (error) {
+      console.warn('No access token found for client:', clientId);
+      return;
+    }
 
     if (tokenData?.token) {
       // Simulate push notification (in production, use a service like Firebase)
@@ -61,5 +88,6 @@ export const sendNotificationToClient = async (clientId: string, billingCount: n
     }
   } catch (error) {
     console.error('Error sending notification:', error);
+    // Don't throw the error, just log it as notifications are not critical
   }
 };

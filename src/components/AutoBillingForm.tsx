@@ -25,9 +25,57 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
     end_date: '',
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get today's date in YYYY-MM-DD format for minimum date validation
+  const today = new Date().toISOString().split('T')[0];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+    
+    if (isSubmitting) return;
+
+    // Client-side validation
+    if (!formData.client_id) {
+      alert('Por favor, selecione um cliente.');
+      return;
+    }
+
+    if (!formData.name.trim()) {
+      alert('Por favor, insira um nome para o plano.');
+      return;
+    }
+
+    const amount = parseFloat(formData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Por favor, insira um valor válido maior que zero.');
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      alert('Por favor, insira uma descrição.');
+      return;
+    }
+
+    if (!formData.start_date || !formData.end_date) {
+      alert('Por favor, selecione as datas inicial e final.');
+      return;
+    }
+
+    const startDate = new Date(formData.start_date);
+    const endDate = new Date(formData.end_date);
+    
+    if (endDate <= startDate) {
+      alert('A data final deve ser posterior à data inicial.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -44,7 +92,7 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
           <Select 
             value={formData.client_id} 
             onValueChange={(value) => setFormData({...formData, client_id: value})}
-            required
+            disabled={isSubmitting}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione um cliente" />
@@ -66,7 +114,8 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
             placeholder="Ex: Aluguel Apartamento 101"
-            required
+            disabled={isSubmitting}
+            maxLength={100}
           />
         </div>
         
@@ -80,7 +129,7 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
             value={formData.amount}
             onChange={(e) => setFormData({...formData, amount: e.target.value})}
             placeholder="0,00"
-            required
+            disabled={isSubmitting}
           />
         </div>
         
@@ -89,7 +138,7 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
           <Select 
             value={formData.frequency} 
             onValueChange={(value: 'weekly' | 'biweekly' | 'monthly') => setFormData({...formData, frequency: value})}
-            required
+            disabled={isSubmitting}
           >
             <SelectTrigger>
               <SelectValue />
@@ -110,7 +159,8 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
               type="date"
               value={formData.start_date}
               onChange={(e) => setFormData({...formData, start_date: e.target.value})}
-              required
+              min={today}
+              disabled={isSubmitting}
             />
           </div>
           
@@ -121,7 +171,8 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
               type="date"
               value={formData.end_date}
               onChange={(e) => setFormData({...formData, end_date: e.target.value})}
-              required
+              min={formData.start_date || today}
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -133,8 +184,9 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
             value={formData.description}
             onChange={(e) => setFormData({...formData, description: e.target.value})}
             placeholder="Descrição que aparecerá em todas as cobranças"
-            required
+            disabled={isSubmitting}
             maxLength={250}
+            rows={3}
           />
           <p className="text-xs text-gray-500 mt-1">
             {formData.description.length}/250 caracteres
@@ -142,11 +194,19 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
         </div>
         
         <div className="flex justify-end space-x-2 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
             Cancelar
           </Button>
-          <Button type="submit">
-            Criar Plano e Gerar Cobranças
+          <Button 
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Criando...' : 'Criar Plano e Gerar Cobranças'}
           </Button>
         </div>
       </form>

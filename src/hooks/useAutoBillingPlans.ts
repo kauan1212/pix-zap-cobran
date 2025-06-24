@@ -15,8 +15,7 @@ export const useAutoBillingPlans = () => {
 
     setLoading(true);
     try {
-      // Using type assertion since the table is new and types aren't regenerated yet
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('auto_billing_plans')
         .select(`
           *,
@@ -42,6 +41,11 @@ export const useAutoBillingPlans = () => {
       }
     } catch (error) {
       console.error('Error loading plans:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Ocorreu um erro ao carregar os planos.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -49,7 +53,7 @@ export const useAutoBillingPlans = () => {
 
   const togglePlanStatus = async (planId: string, isActive: boolean) => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('auto_billing_plans')
         .update({ is_active: isActive })
         .eq('id', planId);
@@ -69,6 +73,11 @@ export const useAutoBillingPlans = () => {
       }
     } catch (error) {
       console.error('Error updating plan:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Ocorreu um erro ao atualizar o plano.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -81,7 +90,7 @@ export const useAutoBillingPlans = () => {
         .eq('auto_billing_plan_id', planId)
         .eq('status', 'pending');
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('auto_billing_plans')
         .delete()
         .eq('id', planId);
@@ -101,6 +110,11 @@ export const useAutoBillingPlans = () => {
       }
     } catch (error) {
       console.error('Error deleting plan:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Ocorreu um erro ao excluir o plano.",
+        variant: "destructive",
+      });
     }
   };
 

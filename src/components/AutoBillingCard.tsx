@@ -15,19 +15,41 @@ interface AutoBillingCardProps {
 }
 
 const AutoBillingCard = ({ plan, onToggleStatus, onDelete }: AutoBillingCardProps) => {
+  const handleDelete = () => {
+    if (window.confirm('Tem certeza que deseja excluir este plano? Esta ação não pode ser desfeita.')) {
+      onDelete(plan.id);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL',
+      minimumFractionDigits: 2 
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('pt-BR');
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200">
       <CardHeader>
         <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">{plan.name}</CardTitle>
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-lg truncate">{plan.name}</CardTitle>
             <CardDescription className="text-sm text-gray-600 mt-1">
-              {plan.clients?.name} • {plan.description}
+              {plan.clients?.name || 'Cliente não encontrado'} • {plan.description}
             </CardDescription>
           </div>
-          <div className="text-right">
+          <div className="text-right ml-4">
             <p className="text-xl font-bold text-gray-900">
-              R$ {plan.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {formatCurrency(Number(plan.amount))}
             </p>
             <Badge variant={plan.is_active ? "default" : "secondary"}>
               {plan.is_active ? 'Ativo' : 'Inativo'}
@@ -45,7 +67,7 @@ const AutoBillingCard = ({ plan, onToggleStatus, onDelete }: AutoBillingCardProp
             <div className="flex items-center space-x-1">
               <Calendar className="w-4 h-4" />
               <span>
-                {new Date(plan.start_date).toLocaleDateString('pt-BR')} - {new Date(plan.end_date).toLocaleDateString('pt-BR')}
+                {formatDate(plan.start_date)} - {formatDate(plan.end_date)}
               </span>
             </div>
           </div>
@@ -66,7 +88,7 @@ const AutoBillingCard = ({ plan, onToggleStatus, onDelete }: AutoBillingCardProp
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onDelete(plan.id)}
+              onClick={handleDelete}
               className="text-red-600 hover:text-red-700"
             >
               <Trash2 className="w-4 h-4" />

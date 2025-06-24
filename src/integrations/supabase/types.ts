@@ -52,7 +52,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "auto_billing_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       billings: {
         Row: {
@@ -104,6 +112,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "billings_auto_billing_plan_id_fkey"
+            columns: ["auto_billing_plan_id"]
+            isOneToOne: false
+            referencedRelation: "auto_billing_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "billings_client_id_fkey"
             columns: ["client_id"]

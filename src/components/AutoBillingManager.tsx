@@ -20,11 +20,18 @@ interface AutoBillingManagerProps {
 
 const AutoBillingManager = ({ clients, onDataChange }: AutoBillingManagerProps) => {
   const { user } = useAuth();
-  const { plans, loadPlans, togglePlanStatus, deletePlan } = useAutoBillingPlans();
+  const { plans, loading, loadPlans, togglePlanStatus, deletePlan } = useAutoBillingPlans();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleSubmit = async (formData: AutoBillingFormData) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Usuário não encontrado. Faça login novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Validate dates
     const startDate = new Date(formData.start_date);
@@ -39,15 +46,26 @@ const AutoBillingManager = ({ clients, onDataChange }: AutoBillingManagerProps) 
       return;
     }
 
+    // Validate amount
+    const amount = parseFloat(formData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Erro no valor",
+        description: "O valor deve ser um número positivo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const { data: planData, error: planError } = await (supabase as any)
+      const { data: planData, error: planError } = await supabase
         .from('auto_billing_plans')
         .insert([
           {
             user_id: user.id,
             client_id: formData.client_id,
             name: formData.name,
-            amount: parseFloat(formData.amount),
+            amount: amount,
             description: formData.description,
             frequency: formData.frequency,
             start_date: formData.start_date,
@@ -58,9 +76,19 @@ const AutoBillingManager = ({ clients, onDataChange }: AutoBillingManagerProps) 
         .single();
 
       if (planError) {
+        console.error('Error creating plan:', planError);
         toast({
           title: "Erro ao criar plano",
           description: planError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!planData) {
+        toast({
+          title: "Erro ao criar plano",
+          description: "Nenhum dado retornado após criação do plano.",
           variant: "destructive",
         });
         return;
@@ -72,13 +100,23 @@ const AutoBillingManager = ({ clients, onDataChange }: AutoBillingManagerProps) 
         frequency: formData.frequency
       }, user.id);
 
+      if (billings.length === 0) {
+        toast({
+          title: "Aviso",
+          description: "Nenhuma cobrança foi gerada para este período.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error: billingsError } = await supabase
         .from('billings')
         .insert(billings);
 
       if (billingsError) {
+        console.error('Error creating billings:', billingsError);
         // If failed to create charges, remove the plan
-        await (supabase as any)
+        await supabase
           .from('auto_billing_plans')
           .delete()
           .eq('id', planData.id);
@@ -92,7 +130,12 @@ const AutoBillingManager = ({ clients, onDataChange }: AutoBillingManagerProps) 
       }
 
       // Send notification to client
-      await sendNotificationToClient(formData.client_id, billings.length, supabase);
+      try {
+        await sendNotificationToClient(formData.client_id, billings.length, supabase);
+      } catch (notificationError) {
+        console.warn('Error sending notification:', notificationError);
+        // Don't fail the whole process for notification errors
+      }
 
       const selectedClient = clients.find(c => c.id === formData.client_id);
       toast({
@@ -107,7 +150,7 @@ const AutoBillingManager = ({ clients, onDataChange }: AutoBillingManagerProps) 
       console.error('Error creating plan:', error);
       toast({
         title: "Erro inesperado",
-        description: "Ocorreu um erro ao criar o plano.",
+        description: "Ocorreu um erro ao criar o plano. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -117,6 +160,14 @@ const AutoBillingManager = ({ clients, onDataChange }: AutoBillingManagerProps) 
     await deletePlan(planId);
     onDataChange();
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="text-gray-600">Carregando planos...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
