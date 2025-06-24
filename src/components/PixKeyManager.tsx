@@ -31,14 +31,17 @@ const PixKeyManager = () => {
         .from('profiles')
         .select('pix_key')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Erro ao carregar chave PIX:', error);
-        // Se não encontrou profile, usa email como padrão
-        setPixKey(user.email || '');
+        throw error;
+      }
+
+      if (profileData?.pix_key) {
+        setPixKey(profileData.pix_key);
       } else {
-        setPixKey(profileData?.pix_key || user.email || '');
+        setPixKey(user.email || '');
       }
     } catch (error) {
       console.error('Erro ao carregar chave PIX:', error);
@@ -65,7 +68,7 @@ const PixKeyManager = () => {
         .from('profiles')
         .select('id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!existingProfile) {
         // Se não existe, cria o profile
@@ -112,7 +115,7 @@ const PixKeyManager = () => {
 
   const handleCancel = () => {
     setIsEditing(false);
-    loadPixKey(); // Recarrega o valor original
+    loadPixKey();
   };
 
   if (loading) {

@@ -97,7 +97,7 @@ const Dashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="clients" className="flex items-center space-x-2">
               <Users className="w-4 h-4" />
               <span>Clientes</span>
@@ -105,6 +105,10 @@ const Dashboard = () => {
             <TabsTrigger value="billings" className="flex items-center space-x-2">
               <Receipt className="w-4 h-4" />
               <span>Cobranças</span>
+            </TabsTrigger>
+            <TabsTrigger value="auto-billing" className="flex items-center space-x-2">
+              <Clock className="w-4 h-4" />
+              <span>Automático</span>
             </TabsTrigger>
             <TabsTrigger value="recurring" className="flex items-center space-x-2">
               <Repeat className="w-4 h-4" />
@@ -126,6 +130,10 @@ const Dashboard = () => {
 
           <TabsContent value="billings">
             <BillingManager clients={clients} onDataChange={handleDataChange} />
+          </TabsContent>
+
+          <TabsContent value="auto-billing">
+            <AutoBillingManager clients={clients} onDataChange={handleDataChange} />
           </TabsContent>
 
           <TabsContent value="recurring">
