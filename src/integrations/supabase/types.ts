@@ -9,9 +9,55 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      auto_billing_plans: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          description: string
+          end_date: string
+          frequency: string
+          id: string
+          is_active: boolean
+          name: string
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          description: string
+          end_date: string
+          frequency: string
+          id?: string
+          is_active?: boolean
+          name: string
+          start_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          description?: string
+          end_date?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       billings: {
         Row: {
           amount: number
+          auto_billing_plan_id: string | null
           client_id: string
           created_at: string
           description: string
@@ -27,6 +73,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          auto_billing_plan_id?: string | null
           client_id: string
           created_at?: string
           description: string
@@ -42,6 +89,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          auto_billing_plan_id?: string | null
           client_id?: string
           created_at?: string
           description?: string

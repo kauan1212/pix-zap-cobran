@@ -63,33 +63,34 @@ const AutoBillingManager = ({ clients, onDataChange }: AutoBillingManagerProps) 
   const loadPlans = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('auto_billing_plans')
-      .select(`
-        *,
-        clients (
-          id,
-          name,
-          email,
-          phone
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      // Using type assertion since the table is new and types aren't regenerated yet
+      const { data, error } = await (supabase as any)
+        .from('auto_billing_plans')
+        .select(`
+          *,
+          clients (
+            id,
+            name,
+            email,
+            phone
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error loading auto billing plans:', error);
-      toast({
-        title: "Erro ao carregar planos",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      const typedPlans: AutoBillingPlan[] = (data || []).map(item => ({
-        ...item,
-        frequency: item.frequency as 'weekly' | 'biweekly' | 'monthly'
-      }));
-      setPlans(typedPlans);
+      if (error) {
+        console.error('Error loading auto billing plans:', error);
+        toast({
+          title: "Erro ao carregar planos",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setPlans(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading plans:', error);
     }
   };
 
@@ -144,70 +145,79 @@ const AutoBillingManager = ({ clients, onDataChange }: AutoBillingManagerProps) 
       return;
     }
 
-    const { data: planData, error: planError } = await supabase
-      .from('auto_billing_plans')
-      .insert([
-        {
-          user_id: user.id,
-          client_id: formData.client_id,
-          name: formData.name,
-          amount: parseFloat(formData.amount),
-          description: formData.description,
-          frequency: formData.frequency,
-          start_date: formData.start_date,
-          end_date: formData.end_date,
-        }
-      ])
-      .select()
-      .single();
-
-    if (planError) {
-      toast({
-        title: "Erro ao criar plano",
-        description: planError.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Gerar todas as cobranças baseadas no plano
-    const billings = generateBillingsForPlan({
-      ...planData,
-      frequency: formData.frequency
-    });
-
-    const { error: billingsError } = await supabase
-      .from('billings')
-      .insert(billings);
-
-    if (billingsError) {
-      // Se falhou ao criar cobranças, remove o plano
-      await supabase
+    try {
+      const { data: planData, error: planError } = await (supabase as any)
         .from('auto_billing_plans')
-        .delete()
-        .eq('id', planData.id);
+        .insert([
+          {
+            user_id: user.id,
+            client_id: formData.client_id,
+            name: formData.name,
+            amount: parseFloat(formData.amount),
+            description: formData.description,
+            frequency: formData.frequency,
+            start_date: formData.start_date,
+            end_date: formData.end_date,
+          }
+        ])
+        .select()
+        .single();
 
+      if (planError) {
+        toast({
+          title: "Erro ao criar plano",
+          description: planError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Gerar todas as cobranças baseadas no plano
+      const billings = generateBillingsForPlan({
+        ...planData,
+        frequency: formData.frequency
+      });
+
+      const { error: billingsError } = await supabase
+        .from('billings')
+        .insert(billings);
+
+      if (billingsError) {
+        // Se falhou ao criar cobranças, remove o plano
+        await (supabase as any)
+          .from('auto_billing_plans')
+          .delete()
+          .eq('id', planData.id);
+
+        toast({
+          title: "Erro ao gerar cobranças",
+          description: billingsError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Enviar notificação para o cliente
+      await sendNotificationToClient(formData.client_id, billings.length);
+
+      const selectedClient = clients.find(c => c.id === formData.client_id);
       toast({
-        title: "Erro ao gerar cobranças",
-        description: billingsError.message,
+        title: "Plano criado com sucesso!",
+        description: `${billings.length} cobranças foram geradas para ${selectedClient?.name}.`,
+      });
+
+      resetForm();
+      setIsDialogOpen(false);
+      loadPlans();
+      onDataChange();
+    } catch (error) {
+      console.error('Error creating plan:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Ocorreu um erro ao criar o plano.",
         variant: "destructive",
       });
-      return;
     }
-
-    // Enviar notificação para o cliente
-    await sendNotificationToClient(formData.client_id, billings.length);
-
-    const selectedClient = clients.find(c => c.id === formData.client_id);
-    toast({
-      title: "Plano criado com sucesso!",
-      description: `${billings.length} cobranças foram geradas para ${selectedClient?.name}.`,
-    });
-
-    resetForm();
-    setIsDialogOpen(false);
-    loadPlans();
-    onDataChange();
   };
 
   const sendNotificationToClient = async (clientId: string, billingCount: number) => {
@@ -244,52 +254,60 @@ const AutoBillingManager = ({ clients, onDataChange }: AutoBillingManagerProps) 
   };
 
   const togglePlanStatus = async (planId: string, isActive: boolean) => {
-    const { error } = await supabase
-      .from('auto_billing_plans')
-      .update({ is_active: isActive })
-      .eq('id', planId);
+    try {
+      const { error } = await (supabase as any)
+        .from('auto_billing_plans')
+        .update({ is_active: isActive })
+        .eq('id', planId);
 
-    if (error) {
-      toast({
-        title: "Erro ao atualizar plano",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Plano atualizado",
-        description: `Plano ${isActive ? 'ativado' : 'desativado'} com sucesso.`,
-      });
-      loadPlans();
+      if (error) {
+        toast({
+          title: "Erro ao atualizar plano",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Plano atualizado",
+          description: `Plano ${isActive ? 'ativado' : 'desativado'} com sucesso.`,
+        });
+        loadPlans();
+      }
+    } catch (error) {
+      console.error('Error updating plan:', error);
     }
   };
 
   const deletePlan = async (planId: string) => {
-    // Deletar cobranças relacionadas primeiro
-    await supabase
-      .from('billings')
-      .delete()
-      .eq('auto_billing_plan_id', planId)
-      .eq('status', 'pending');
+    try {
+      // Deletar cobranças relacionadas primeiro
+      await supabase
+        .from('billings')
+        .delete()
+        .eq('auto_billing_plan_id', planId)
+        .eq('status', 'pending');
 
-    const { error } = await supabase
-      .from('auto_billing_plans')
-      .delete()
-      .eq('id', planId);
+      const { error } = await (supabase as any)
+        .from('auto_billing_plans')
+        .delete()
+        .eq('id', planId);
 
-    if (error) {
-      toast({
-        title: "Erro ao excluir plano",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Plano excluído",
-        description: "Plano e cobranças pendentes removidos com sucesso.",
-      });
-      loadPlans();
-      onDataChange();
+      if (error) {
+        toast({
+          title: "Erro ao excluir plano",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Plano excluído",
+          description: "Plano e cobranças pendentes removidos com sucesso.",
+        });
+        loadPlans();
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error deleting plan:', error);
     }
   };
 

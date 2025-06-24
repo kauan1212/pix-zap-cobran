@@ -1,16 +1,16 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Users, Receipt, CreditCard, Settings, Repeat } from 'lucide-react';
+import { LogOut, Users, Receipt, CreditCard, Settings, Repeat, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ClientManager from './ClientManager';
 import BillingManager from './BillingManager';
 import PixKeyManager from './PixKeyManager';
 import RecurringPlansManager from './RecurringPlansManager';
 import SubscriptionManager from './SubscriptionManager';
+import AutoBillingManager from './AutoBillingManager';
 
 interface Client {
   id: string;
