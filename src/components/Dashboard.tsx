@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,9 +12,43 @@ import PixKeyManager from './PixKeyManager';
 import RecurringPlansManager from './RecurringPlansManager';
 import SubscriptionManager from './SubscriptionManager';
 
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('clients');
+  const [clients, setClients] = useState<Client[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      loadClients();
+    }
+  }, [user]);
+
+  const loadClients = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, name, email, phone')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading clients:', error);
+    } else {
+      setClients(data || []);
+    }
+  };
+
+  const handleDataChange = () => {
+    loadClients();
+  };
 
   const handleLogout = async () => {
     try {
@@ -87,19 +121,19 @@ const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="clients">
-            <ClientManager />
+            <ClientManager onDataChange={handleDataChange} />
           </TabsContent>
 
           <TabsContent value="billings">
-            <BillingManager />
+            <BillingManager clients={clients} onDataChange={handleDataChange} />
           </TabsContent>
 
           <TabsContent value="recurring">
-            <RecurringPlansManager />
+            <RecurringPlansManager clients={clients} onDataChange={handleDataChange} />
           </TabsContent>
 
           <TabsContent value="subscriptions">
-            <SubscriptionManager />
+            <SubscriptionManager clients={clients} onDataChange={handleDataChange} />
           </TabsContent>
 
           <TabsContent value="settings">
