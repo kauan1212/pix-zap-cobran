@@ -1,4 +1,6 @@
-# Welcome to your Lovable project
+# Gestão de Planos
+
+Sistema completo para gestão de planos, assinaturas e cobranças recorrentes.
 
 ## Project info
 

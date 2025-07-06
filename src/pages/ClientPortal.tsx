@@ -218,14 +218,14 @@ const ClientPortal = () => {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">₿</span>
-              </div>
-              <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                PIX Zap Cobrança
-              </span>
-            </div>
+                    <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-sm">₿</span>
+          </div>
+          <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Gestão de Planos
+          </span>
+        </div>
             
             <div className="text-right">
               <p className="text-sm font-medium text-gray-900">{client?.name}</p>
@@ -242,7 +242,7 @@ const ClientPortal = () => {
             Olá, {client?.name}!
           </h1>
           <p className="text-gray-600">
-            Aqui você pode visualizar suas cobranças e realizar pagamentos via PIX.
+            Aqui você pode visualizar seus planos e realizar pagamentos via PIX.
           </p>
         </div>
 
@@ -258,7 +258,7 @@ const ClientPortal = () => {
                 R$ {totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-gray-500">
-                {pendingBillings.length} cobrança(s)
+                {pendingBillings.length} plano(s)
               </p>
             </CardContent>
           </Card>
@@ -273,7 +273,7 @@ const ClientPortal = () => {
                 R$ {totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-gray-500">
-                {paidBillings.length} cobrança(s) pagas
+                {paidBillings.length} plano(s) pagos
               </p>
             </CardContent>
           </Card>
@@ -304,7 +304,7 @@ const ClientPortal = () => {
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
-              Cobranças Pendentes
+              Planos Pendentes
             </h2>
             <div className="space-y-4">
               {pendingBillings.map((billing) => (
@@ -413,8 +413,8 @@ const ClientPortal = () => {
           <Card>
             <CardContent className="text-center py-12">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma cobrança encontrada</h3>
-              <p className="text-gray-600">Não há cobranças registradas para você no momento.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum plano encontrado</h3>
+              <p className="text-gray-600">Não há planos registrados para você no momento.</p>
             </CardContent>
           </Card>
         )}

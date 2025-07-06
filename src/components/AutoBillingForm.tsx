@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,7 +78,7 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
   };
 
   return (
-    <DialogContent className="sm:max-w-[500px]">
+    <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Criar Plano de Cobrança Automática</DialogTitle>
         <DialogDescription>
@@ -153,7 +152,7 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
         
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="start_date">Data Inicial *</Label>
+            <Label htmlFor="start_date">Próxima Cobrança *</Label>
             <Input
               id="start_date"
               type="date"
@@ -163,7 +162,6 @@ const AutoBillingForm = ({ clients, onSubmit, onCancel }: AutoBillingFormProps) 
               disabled={isSubmitting}
             />
           </div>
-          
           <div>
             <Label htmlFor="end_date">Data Final *</Label>
             <Input

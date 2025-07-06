@@ -136,9 +136,9 @@ const LoginForm = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-gray-900">PIX Zap Cobrança</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-900">Gestão de Planos</CardTitle>
             <CardDescription>
-              Sistema completo de cobrança com PIX
+              Sistema completo de gestão de planos e assinaturas
             </CardDescription>
           </CardHeader>
           <CardContent>

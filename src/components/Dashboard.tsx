@@ -80,7 +80,7 @@ const Dashboard = () => {
                 <span className="text-white font-bold text-sm">₿</span>
               </div>
               <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                PIX Zap Cobrança
+                Gestão de Planos
               </span>
             </div>
             
