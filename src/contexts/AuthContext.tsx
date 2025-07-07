@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -103,18 +102,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Você já pode acessar o sistema",
       });
 
-      // Aguardar um pouco para garantir que o perfil foi criado pelo trigger
-      setTimeout(async () => {
-        // Gerar chave PIX padrão baseada no ID do usuário (pode ser personalizada depois)
-        if (data.user) {
-          const defaultPixKey = data.user.email || `user-${data.user.id.substring(0, 8)}`;
-          
+      // Aguarda o perfil ser criado pelo trigger antes de atualizar a chave Pix
+      if (data.user) {
+        const defaultPixKey = data.user.email || `user-${data.user.id.substring(0, 8)}`;
+        let tentativas = 0;
+        let perfilExiste = false;
+        while (tentativas < 10 && !perfilExiste) {
+          const { data: perfil } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', data.user.id)
+            .single();
+          if (perfil) {
+            perfilExiste = true;
+          } else {
+            await new Promise(res => setTimeout(res, 500)); // espera 0,5s
+            tentativas++;
+          }
+        }
+        if (perfilExiste) {
           await supabase
             .from('profiles')
             .update({ pix_key: defaultPixKey })
             .eq('id', data.user.id);
         }
-      }, 1000);
+      }
 
       return true;
     } catch (error) {

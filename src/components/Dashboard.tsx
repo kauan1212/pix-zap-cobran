@@ -110,17 +110,9 @@ const Dashboard = () => {
               <Clock className="w-4 h-4" />
               <span>Automático</span>
             </TabsTrigger>
-            <TabsTrigger value="recurring" className="flex items-center space-x-2">
-              <Repeat className="w-4 h-4" />
-              <span>Planos</span>
-            </TabsTrigger>
             <TabsTrigger value="subscriptions" className="flex items-center space-x-2">
               <CreditCard className="w-4 h-4" />
               <span>Assinaturas</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center space-x-2">
-              <Settings className="w-4 h-4" />
-              <span>PIX</span>
             </TabsTrigger>
           </TabsList>
 
@@ -136,16 +128,8 @@ const Dashboard = () => {
             <AutoBillingManager clients={clients} onDataChange={handleDataChange} />
           </TabsContent>
 
-          <TabsContent value="recurring">
-            <RecurringPlansManager clients={clients} onDataChange={handleDataChange} />
-          </TabsContent>
-
           <TabsContent value="subscriptions">
             <SubscriptionManager clients={clients} onDataChange={handleDataChange} />
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <PixKeyManager />
           </TabsContent>
         </Tabs>
       </div>

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar, DollarSign, Copy, AlertCircle, CheckCircle2, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface Client {
   id: string;
@@ -25,6 +26,7 @@ interface Billing {
   interest?: number;
   payment_date?: string;
   created_at: string;
+  receipt_url?: string;
 }
 
 const ClientPortal = () => {
@@ -33,7 +35,7 @@ const ClientPortal = () => {
   const [billings, setBillings] = useState<Billing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pixKey, setPixKey] = useState<string>('');
+  const [pixKey] = useState<string>('15991653601');
 
   useEffect(() => {
     if (token) {
@@ -105,11 +107,6 @@ const ClientPortal = () => {
         })));
       }
 
-      // Buscar chave PIX atualizada do proprietário da conta
-      if (clientData.user_id) {
-        await loadOwnerPixKey(clientData.user_id);
-      }
-
     } catch (err) {
       console.error('Unexpected error:', err);
       setError('Erro ao carregar dados do cliente');
@@ -118,37 +115,12 @@ const ClientPortal = () => {
     }
   };
 
-  const loadOwnerPixKey = async (userId: string) => {
-    try {
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('pix_key')
-        .eq('id', userId)
-        .single();
-
-      console.log('Profile PIX key:', profileData);
-
-      if (!error && profileData?.pix_key) {
-        setPixKey(profileData.pix_key);
-      } else {
-        // Buscar email do usuário como fallback
-        const { data: userData } = await supabase.auth.admin.getUserById(userId);
-        setPixKey(userData?.user?.email || 'Chave PIX não configurada');
-      }
-    } catch (error) {
-      console.error('Error loading PIX key:', error);
-      setPixKey('Chave PIX não configurada');
-    }
-  };
-
   const copyPixKey = () => {
-    if (pixKey && pixKey !== 'Chave PIX não configurada') {
-      navigator.clipboard.writeText(pixKey);
-      toast({
-        title: "Chave PIX copiada!",
-        description: `Chave PIX ${pixKey} copiada para área de transferência.`,
-      });
-    }
+    navigator.clipboard.writeText('15991653601');
+    toast({
+      title: "Chave PIX copiada!",
+      description: `Chave PIX 15991653601 copiada para área de transferência.`,
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -291,133 +263,170 @@ const ClientPortal = () => {
                 onClick={copyPixKey} 
                 size="sm" 
                 className="w-full"
-                disabled={pixKey === 'Chave PIX não configurada'}
               >
-                {pixKey === 'Chave PIX não configurada' ? 'Chave não configurada' : 'Copiar Chave PIX'}
+                Copiar Chave PIX
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Pending Billings */}
-        {pendingBillings.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
-              Planos Pendentes
-            </h2>
-            <div className="space-y-4">
-              {pendingBillings.map((billing) => (
-                <Card key={billing.id} className="border-l-4 border-l-yellow-400">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{billing.description}</CardTitle>
-                        <CardDescription className="flex items-center space-x-4 mt-2">
-                          <div className="flex items-center space-x-1">
-                            <Calendar className="w-4 h-4" />
-                            <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
-                          </div>
-                          {billing.penalty && billing.penalty > 0 && (
-                            <span className="text-red-600">Multa: R$ {billing.penalty.toFixed(2)}</span>
-                          )}
-                          {billing.interest && billing.interest > 0 && (
-                            <span className="text-red-600">Juros: {billing.interest}% ao mês</span>
-                          )}
-                        </CardDescription>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-gray-900">
-                          R$ {billing.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                        <Badge className={`text-xs ${getStatusColor(billing.status)}`}>
-                          {getStatusIcon(billing.status)}
-                          <span className="ml-1">{getStatusText(billing.status)}</span>
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-blue-900 mb-2">Para pagar via PIX:</h4>
-                      <p className="text-sm text-blue-800 mb-3">
-                        1. Copie a chave PIX: <span className="font-mono font-bold break-all">{pixKey}</span>
-                      </p>
-                      <p className="text-sm text-blue-800 mb-3">
-                        2. Abra o app do seu banco e faça o PIX
-                      </p>
-                      <p className="text-sm text-blue-800 mb-4">
-                        3. Envie o comprovante para confirmação
-                      </p>
-                      <Button 
-                        onClick={copyPixKey} 
-                        className="w-full"
-                        disabled={pixKey === 'Chave PIX não configurada'}
-                      >
-                        <Copy className="w-4 h-4 mr-2" />
-                        {pixKey === 'Chave PIX não configurada' ? 'Chave não configurada' : 'Copiar Chave PIX'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Paid Billings */}
-        {paidBillings.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <CheckCircle2 className="w-5 h-5 mr-2 text-green-600" />
-              Pagamentos Realizados
-            </h2>
-            <div className="space-y-4">
-              {paidBillings.map((billing) => (
-                <Card key={billing.id} className="border-l-4 border-l-green-400 opacity-75">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{billing.description}</CardTitle>
-                        <CardDescription className="flex items-center space-x-4 mt-2">
-                          <div className="flex items-center space-x-1">
-                            <Calendar className="w-4 h-4" />
-                            <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
-                          </div>
-                          {billing.payment_date && (
-                            <div className="flex items-center space-x-1 text-green-600">
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span>Pago em: {new Date(billing.payment_date).toLocaleDateString('pt-BR')}</span>
+        <Tabs defaultValue="pendentes" className="w-full mt-8">
+          <TabsList className="mb-4">
+            <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
+            <TabsTrigger value="pagas">Pagas</TabsTrigger>
+          </TabsList>
+          <TabsContent value="pendentes">
+            {pendingBillings.length > 0 ? (
+              <div className="space-y-4">
+                {pendingBillings.map((billing) => (
+                  <Card key={billing.id} className="border-l-4 border-l-yellow-400">
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">{billing.description}</CardTitle>
+                          <CardDescription className="flex items-center space-x-4 mt-2">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="w-4 h-4" />
+                              <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
                             </div>
-                          )}
-                        </CardDescription>
+                            {billing.penalty && billing.penalty > 0 && (
+                              <span className="text-red-600">Multa: R$ {billing.penalty.toFixed(2)}</span>
+                            )}
+                            {billing.interest && billing.interest > 0 && (
+                              <span className="text-red-600">Juros: {billing.interest}% ao mês</span>
+                            )}
+                          </CardDescription>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-gray-900">
+                            R$ {billing.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                          <Badge className={`text-xs ${getStatusColor(billing.status)}`}>
+                            {getStatusIcon(billing.status)}
+                            <span className="ml-1">{getStatusText(billing.status)}</span>
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-gray-900">
-                          R$ {billing.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-blue-900 mb-2">Para pagar via PIX:</h4>
+                        <p className="text-sm text-blue-800 mb-3">
+                          1. Copie a chave PIX: <span className="font-mono font-bold break-all">{pixKey}</span>
                         </p>
-                        <Badge className={`text-xs ${getStatusColor(billing.status)}`}>
-                          {getStatusIcon(billing.status)}
-                          <span className="ml-1">{getStatusText(billing.status)}</span>
-                        </Badge>
+                        <p className="text-sm text-blue-800 mb-3">
+                          2. Abra o app do seu banco e faça o PIX
+                        </p>
+                        <p className="text-sm text-blue-800 mb-4">
+                          3. Envie o comprovante para confirmação
+                        </p>
+                        <p className="text-sm text-blue-800 mb-3">
+                          OBS: para pagamentos extras referente a outros serviços realizar em pix separados
+                        </p>
+                        <Button 
+                          onClick={copyPixKey} 
+                          className="w-full"
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copiar Chave PIX
+                        </Button>
+                        <Button
+                          className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => {
+                            const data = new Date(billing.due_date).toLocaleDateString('pt-BR');
+                            const valor = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                            const texto = `Olá! Já realizei o pagamento referente ao vencimento do dia ${data}, parcela ${billing.description}, no valor de ${valor}.`;
+                            const url = `https://wa.me/5515991653601?text=${encodeURIComponent(texto)}`;
+                            window.open(url, '_blank');
+                          }}
+                        >
+                          Enviar comprovante via WhatsApp
+                        </Button>
                       </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {billings.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum plano encontrado</h3>
-              <p className="text-gray-600">Não há planos registrados para você no momento.</p>
-            </CardContent>
-          </Card>
-        )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma cobrança pendente</h3>
+                  <p className="text-gray-600">Você não possui cobranças pendentes no momento.</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          <TabsContent value="pagas">
+            {paidBillings.length > 0 ? (
+              <div className="space-y-4">
+                {paidBillings.map((billing, idx) => (
+                  <Card key={billing.id} className="border-l-4 border-l-green-400 opacity-75">
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">{billing.description}</CardTitle>
+                          <CardDescription className="flex items-center space-x-4 mt-2">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="w-4 h-4" />
+                              <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
+                            </div>
+                            {billing.payment_date && (
+                              <div className="flex items-center space-x-1 text-green-600">
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>Pago em: {new Date(billing.payment_date).toLocaleDateString('pt-BR')}</span>
+                              </div>
+                            )}
+                          </CardDescription>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-gray-900">
+                            R$ {billing.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                          <Badge className={`text-xs ${getStatusColor(billing.status)}`}>
+                            {getStatusIcon(billing.status)}
+                            <span className="ml-1">{getStatusText(billing.status)}</span>
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {/* Upload ou visualização do comprovante */}
+                      {billing.receipt_url ? (
+                        <div className="mt-2">
+                          <a href={billing.receipt_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                            Ver comprovante enviado
+                          </a>
+                        </div>
+                      ) : (
+                        <Button
+                          className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => {
+                            const data = new Date(billing.due_date).toLocaleDateString('pt-BR');
+                            const valor = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                            const texto = `Olá! Já realizei o pagamento referente ao vencimento do dia ${data}, parcela ${billing.description}, no valor de ${valor}.`;
+                            const url = `https://wa.me/5515991653601?text=${encodeURIComponent(texto)}`;
+                            window.open(url, '_blank');
+                          }}
+                        >
+                          Enviar comprovante via WhatsApp
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma cobrança paga</h3>
+                  <p className="text-gray-600">Você ainda não possui cobranças pagas.</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

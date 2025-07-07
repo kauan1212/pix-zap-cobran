@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PlusCircle, FileText, Calendar, DollarSign, MessageSquare, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import ReceiptUpload from '@/components/ReceiptUpload';
 
 interface Client {
   id: string;
@@ -31,6 +33,7 @@ interface Billing {
   payment_date?: string;
   created_at: string;
   clients?: Client;
+  receipt_url?: string;
 }
 
 interface BillingManagerProps {
@@ -50,6 +53,7 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
     penalty: '',
     interest: '',
   });
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
 
   const PIX_KEY = '15991653601';
 
@@ -249,6 +253,21 @@ Obrigado!`;
     }
   };
 
+  // Agrupar billings por cliente
+  const billingsByClient = billings.reduce((acc, billing) => {
+    const clientName = billing.clients?.name || 'Cliente desconhecido';
+    if (!acc[clientName]) acc[clientName] = [];
+    acc[clientName].push(billing);
+    return acc;
+  }, {} as Record<string, Billing[]>);
+
+  // Filtrar cobranças do cliente selecionado
+  const filteredBillings = selectedClientId
+    ? billings.filter(b => b.client_id === selectedClientId)
+    : [];
+  const pendingBillings = filteredBillings.filter(b => b.status === 'pending' || b.status === 'overdue');
+  const paidBillings = filteredBillings.filter(b => b.status === 'paid');
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -256,117 +275,26 @@ Obrigado!`;
           <h2 className="text-2xl font-bold text-gray-900">Cobranças</h2>
           <p className="text-gray-600">Gerencie suas cobranças e pagamentos</p>
         </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm} className="bg-blue-600 hover:bg-blue-700">
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Nova Cobrança
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Nova Cobrança</DialogTitle>
-              <DialogDescription>
-                Crie uma nova cobrança para seus clientes
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="client">Cliente *</Label>
-                <Select 
-                  value={formData.client_id} 
-                  onValueChange={(value) => setFormData({...formData, client_id: value})}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="amount">Valor (R$) *</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                  placeholder="0,00"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="description">Descrição *</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Descrição do serviço ou produto"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="due_date">Data de Vencimento *</Label>
-                <Input
-                  id="due_date"
-                  type="date"
-                  value={formData.due_date}
-                  onChange={(e) => setFormData({...formData, due_date: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="penalty">Multa (R$)</Label>
-                  <Input
-                    id="penalty"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.penalty}
-                    onChange={(e) => setFormData({...formData, penalty: e.target.value})}
-                    placeholder="0,00"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="interest">Juros (% ao dia)</Label>
-                  <Input
-                    id="interest"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.interest}
-                    onChange={(e) => setFormData({...formData, interest: e.target.value})}
-                    placeholder="0,00"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">
-                  Criar Cobrança
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-4">
+          <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder="Selecione um cliente" />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm} className="bg-blue-600 hover:bg-blue-700">
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Nova Cobrança
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+        </div>
       </div>
 
       {/* PIX Key Display */}
@@ -385,104 +313,186 @@ Obrigado!`;
         </CardContent>
       </Card>
 
-      {billings.length === 0 ? (
+      {selectedClientId === '' ? (
         <Card>
           <CardContent className="text-center py-12">
             <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma cobrança criada</h3>
-            <p className="text-gray-600 mb-6">Comece criando sua primeira cobrança</p>
-            <Button 
-              onClick={() => setIsDialogOpen(true)} 
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Criar primeira cobrança
-            </Button>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Selecione um cliente</h3>
+            <p className="text-gray-600 mb-6">Escolha um cliente para visualizar as cobranças.</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {billings.map((billing) => (
-            <Card key={billing.id} className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{billing.clients?.name}</CardTitle>
-                    <CardDescription className="text-sm text-gray-600 mt-1">
-                      {billing.description}
-                    </CardDescription>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-gray-900">
-                      R$ {billing.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                    <Badge className={`text-xs ${getStatusColor(billing.status)}`}>
-                      {getStatusText(billing.status)}
-                    </Badge>
-                  </div>
+        <Tabs defaultValue="pendentes" className="w-full mt-8">
+          <TabsList className="mb-4">
+            <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
+            <TabsTrigger value="pagas">Pagas</TabsTrigger>
+          </TabsList>
+          <TabsContent value="pendentes">
+            <div>
+              <h3 className="text-lg font-bold text-yellow-700 mb-2">Pendentes</h3>
+              {pendingBillings.length === 0 ? (
+                <Card><CardContent className="text-center py-8 text-gray-500">Nenhuma cobrança pendente</CardContent></Card>
+              ) : (
+                <div className="space-y-4">
+                  {pendingBillings.map((billing) => (
+                    <Card key={billing.id} className="hover:shadow-lg transition-shadow duration-200">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-lg">{billing.description}</CardTitle>
+                            <CardDescription className="text-sm text-gray-600 mt-1">
+                              {billing.description}
+                            </CardDescription>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-bold text-gray-900">
+                              R$ {billing.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                            <Badge className={`text-xs ${getStatusColor(billing.status)}`}>
+                              {getStatusText(billing.status)}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="w-4 h-4" />
+                              <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
+                            </div>
+                            {billing.penalty && (
+                              <div className="flex items-center space-x-1">
+                                <DollarSign className="w-4 h-4" />
+                                <span>Multa: R$ {billing.penalty.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {billing.interest && (
+                              <span>Juros: {billing.interest}% ao dia</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyWhatsAppMessage(billing)}
+                          >
+                            <MessageSquare className="w-4 h-4 mr-2" />
+                            Copiar Mensagem WhatsApp
+                          </Button>
+                          {billing.status === 'pending' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateBillingStatus(billing.id, 'paid')}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              Marcar como Paga
+                            </Button>
+                          )}
+                          {billing.status === 'pending' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateBillingStatus(billing.id, 'cancelled')}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              Cancelar
+                            </Button>
+                          )}
+                          {billing.status === 'paid' && billing.payment_date && (
+                            <Badge variant="outline" className="text-green-600">
+                              Pago em {new Date(billing.payment_date).toLocaleDateString('pt-BR')}
+                            </Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                    {billing.penalty && (
-                      <div className="flex items-center space-x-1">
-                        <DollarSign className="w-4 h-4" />
-                        <span>Multa: R$ {billing.penalty.toFixed(2)}</span>
-                      </div>
-                    )}
-                    {billing.interest && (
-                      <span>Juros: {billing.interest}% ao dia</span>
-                    )}
-                  </div>
+              )}
+            </div>
+          </TabsContent>
+          <TabsContent value="pagas">
+            <div>
+              <h3 className="text-lg font-bold text-green-700 mb-2">Pagas</h3>
+              {paidBillings.length === 0 ? (
+                <Card><CardContent className="text-center py-8 text-gray-500">Nenhuma cobrança paga</CardContent></Card>
+              ) : (
+                <div className="space-y-4">
+                  {paidBillings.map((billing) => (
+                    <Card key={billing.id} className="hover:shadow-lg transition-shadow duration-200">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-lg">{billing.description}</CardTitle>
+                            <CardDescription className="text-sm text-gray-600 mt-1">
+                              {billing.description}
+                            </CardDescription>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-bold text-gray-900">
+                              R$ {billing.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                            <Badge className={`text-xs ${getStatusColor(billing.status)}`}>
+                              {getStatusText(billing.status)}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="w-4 h-4" />
+                              <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
+                            </div>
+                            {billing.penalty && (
+                              <div className="flex items-center space-x-1">
+                                <DollarSign className="w-4 h-4" />
+                                <span>Multa: R$ {billing.penalty.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {billing.interest && (
+                              <span>Juros: {billing.interest}% ao dia</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyWhatsAppMessage(billing)}
+                          >
+                            <MessageSquare className="w-4 h-4 mr-2" />
+                            Copiar Mensagem WhatsApp
+                          </Button>
+                          {billing.status === 'paid' && billing.payment_date && (
+                            <Badge variant="outline" className="text-green-600">
+                              Pago em {new Date(billing.payment_date).toLocaleDateString('pt-BR')}
+                            </Badge>
+                          )}
+                        </div>
+                        {billing.receipt_url ? (
+                          <div className="mt-2">
+                            <a href={billing.receipt_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                              Ver comprovante enviado
+                            </a>
+                          </div>
+                        ) : (
+                          <ReceiptUpload billingId={billing.id} onUploaded={url => {
+                            setBillings(prev => prev.map(b => b.id === billing.id ? { ...b, receipt_url: url } : b));
+                          }} />
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyWhatsAppMessage(billing)}
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Copiar Mensagem WhatsApp
-                  </Button>
-                  
-                  {billing.status === 'pending' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateBillingStatus(billing.id, 'paid')}
-                      className="text-green-600 hover:text-green-700"
-                    >
-                      Marcar como Paga
-                    </Button>
-                  )}
-                  
-                  {billing.status === 'pending' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateBillingStatus(billing.id, 'cancelled')}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      Cancelar
-                    </Button>
-                  )}
-
-                  {billing.status === 'paid' && billing.payment_date && (
-                    <Badge variant="outline" className="text-green-600">
-                      Pago em {new Date(billing.payment_date).toLocaleDateString('pt-BR')}
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
