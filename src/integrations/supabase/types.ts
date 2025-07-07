@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
       auto_billing_plans: {
@@ -157,75 +162,149 @@ export type Database = {
           photo_name?: string | null
           photo_url?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "checklist_photos_checklist_id_fkey"
-            columns: ["checklist_id"]
-            isOneToOne: false
-            referencedRelation: "checklists"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       checklists: {
         Row: {
-          brakes_condition: string | null
+          brakes_observation: string | null
+          brakes_status: string | null
+          cleaning_observation: string | null
+          cleaning_status: string | null
+          completed_at: string | null
+          condominium_id: string | null
+          coolant_observation: string | null
+          coolant_status: string | null
           created_at: string | null
-          documentation_condition: string | null
+          damages: string | null
+          electrical_observation: string | null
+          electrical_status: string | null
+          engine_oil_observation: string | null
+          engine_oil_status: string | null
+          face_photo: string | null
+          fuel_level: number | null
+          fuel_photos: string[] | null
           general_observations: string | null
           id: string
-          inspector_signature: string | null
-          lights_condition: string | null
-          oils_condition: string | null
-          renter_signature: string | null
-          tires_condition: string | null
-          updated_at: string | null
-          user_id: string
-          vehicle_brand: string
-          vehicle_km: string
-          vehicle_model: string
-          vehicle_plate: string
-          vehicle_year: string
+          km_photos: string[] | null
+          leaks_observation: string | null
+          leaks_status: string | null
+          lights_observation: string | null
+          lights_status: string | null
+          motorcycle_id: string | null
+          motorcycle_km: string | null
+          motorcycle_photos: string[] | null
+          motorcycle_plate: string
+          signature: string | null
+          status: string | null
+          suspension_observation: string | null
+          suspension_status: string | null
+          tires_observation: string | null
+          tires_status: string | null
+          type: string
+          vigilante_id: string | null
+          vigilante_name: string
         }
         Insert: {
-          brakes_condition?: string | null
+          brakes_observation?: string | null
+          brakes_status?: string | null
+          cleaning_observation?: string | null
+          cleaning_status?: string | null
+          completed_at?: string | null
+          condominium_id?: string | null
+          coolant_observation?: string | null
+          coolant_status?: string | null
           created_at?: string | null
-          documentation_condition?: string | null
+          damages?: string | null
+          electrical_observation?: string | null
+          electrical_status?: string | null
+          engine_oil_observation?: string | null
+          engine_oil_status?: string | null
+          face_photo?: string | null
+          fuel_level?: number | null
+          fuel_photos?: string[] | null
           general_observations?: string | null
           id?: string
-          inspector_signature?: string | null
-          lights_condition?: string | null
-          oils_condition?: string | null
-          renter_signature?: string | null
-          tires_condition?: string | null
-          updated_at?: string | null
-          user_id: string
-          vehicle_brand: string
-          vehicle_km: string
-          vehicle_model: string
-          vehicle_plate: string
-          vehicle_year: string
+          km_photos?: string[] | null
+          leaks_observation?: string | null
+          leaks_status?: string | null
+          lights_observation?: string | null
+          lights_status?: string | null
+          motorcycle_id?: string | null
+          motorcycle_km?: string | null
+          motorcycle_photos?: string[] | null
+          motorcycle_plate: string
+          signature?: string | null
+          status?: string | null
+          suspension_observation?: string | null
+          suspension_status?: string | null
+          tires_observation?: string | null
+          tires_status?: string | null
+          type: string
+          vigilante_id?: string | null
+          vigilante_name: string
         }
         Update: {
-          brakes_condition?: string | null
+          brakes_observation?: string | null
+          brakes_status?: string | null
+          cleaning_observation?: string | null
+          cleaning_status?: string | null
+          completed_at?: string | null
+          condominium_id?: string | null
+          coolant_observation?: string | null
+          coolant_status?: string | null
           created_at?: string | null
-          documentation_condition?: string | null
+          damages?: string | null
+          electrical_observation?: string | null
+          electrical_status?: string | null
+          engine_oil_observation?: string | null
+          engine_oil_status?: string | null
+          face_photo?: string | null
+          fuel_level?: number | null
+          fuel_photos?: string[] | null
           general_observations?: string | null
           id?: string
-          inspector_signature?: string | null
-          lights_condition?: string | null
-          oils_condition?: string | null
-          renter_signature?: string | null
-          tires_condition?: string | null
-          updated_at?: string | null
-          user_id?: string
-          vehicle_brand?: string
-          vehicle_km?: string
-          vehicle_model?: string
-          vehicle_plate?: string
-          vehicle_year?: string
+          km_photos?: string[] | null
+          leaks_observation?: string | null
+          leaks_status?: string | null
+          lights_observation?: string | null
+          lights_status?: string | null
+          motorcycle_id?: string | null
+          motorcycle_km?: string | null
+          motorcycle_photos?: string[] | null
+          motorcycle_plate?: string
+          signature?: string | null
+          status?: string | null
+          suspension_observation?: string | null
+          suspension_status?: string | null
+          tires_observation?: string | null
+          tires_status?: string | null
+          type?: string
+          vigilante_id?: string | null
+          vigilante_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "checklists_condominium_id_fkey"
+            columns: ["condominium_id"]
+            isOneToOne: false
+            referencedRelation: "condominiums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_vigilante_id_fkey"
+            columns: ["vigilante_id"]
+            isOneToOne: false
+            referencedRelation: "vigilantes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_access_tokens: {
         Row: {
@@ -295,36 +374,202 @@ export type Database = {
         }
         Relationships: []
       }
+      condominiums: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          created_at: string
+          id: string
+          is_mutual: boolean | null
+          user1_id: string
+          user1_liked: boolean | null
+          user2_id: string
+          user2_liked: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_mutual?: boolean | null
+          user1_id: string
+          user1_liked?: boolean | null
+          user2_id: string
+          user2_liked?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_mutual?: boolean | null
+          user1_id?: string
+          user1_liked?: boolean | null
+          user2_id?: string
+          user2_liked?: boolean | null
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          match_id: string
+          message_type: string | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          match_id: string
+          message_type?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          match_id?: string
+          message_type?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       motorcycles: {
         Row: {
-          chassis: string
+          brand: string
           color: string
+          condominium_id: string | null
           created_at: string | null
-          engine: string
           id: string
           model: string
           plate: string
-          renavam: string
+          status: string | null
+          updated_at: string | null
+          year: number
         }
         Insert: {
-          chassis: string
+          brand: string
           color: string
+          condominium_id?: string | null
           created_at?: string | null
-          engine: string
           id?: string
           model: string
           plate: string
-          renavam: string
+          status?: string | null
+          updated_at?: string | null
+          year: number
         }
         Update: {
-          chassis?: string
+          brand?: string
           color?: string
+          condominium_id?: string | null
           created_at?: string | null
-          engine?: string
           id?: string
           model?: string
           plate?: string
-          renavam?: string
+          status?: string | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motorcycles_condominium_id_fkey"
+            columns: ["condominium_id"]
+            isOneToOne: false
+            referencedRelation: "condominiums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personal_trainers: {
+        Row: {
+          available_hours: string[] | null
+          average_rating: number | null
+          bio: string | null
+          certifications: string[] | null
+          created_at: string
+          experience_years: number | null
+          full_name: string
+          hourly_rate: number | null
+          id: string
+          is_verified: boolean | null
+          profile_photos: string[] | null
+          specialties: string[] | null
+          total_reviews: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_hours?: string[] | null
+          average_rating?: number | null
+          bio?: string | null
+          certifications?: string[] | null
+          created_at?: string
+          experience_years?: number | null
+          full_name: string
+          hourly_rate?: number | null
+          id?: string
+          is_verified?: boolean | null
+          profile_photos?: string[] | null
+          specialties?: string[] | null
+          total_reviews?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_hours?: string[] | null
+          average_rating?: number | null
+          bio?: string | null
+          certifications?: string[] | null
+          created_at?: string
+          experience_years?: number | null
+          full_name?: string
+          hourly_rate?: number | null
+          id?: string
+          is_verified?: boolean | null
+          profile_photos?: string[] | null
+          specialties?: string[] | null
+          total_reviews?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -435,6 +680,313 @@ export type Database = {
         }
         Relationships: []
       }
+      swipes: {
+        Row: {
+          created_at: string
+          id: string
+          liked: boolean
+          swiped_id: string
+          swiper_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          liked: boolean
+          swiped_id: string
+          swiper_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          liked?: boolean
+          swiped_id?: string
+          swiper_id?: string
+        }
+        Relationships: []
+      }
+      trainer_bookings: {
+        Row: {
+          booking_date: string
+          booking_time: string
+          client_id: string
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          notes: string | null
+          payment_status: string | null
+          status: string | null
+          total_amount: number
+          trainer_id: string
+          updated_at: string
+        }
+        Insert: {
+          booking_date: string
+          booking_time: string
+          client_id: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          payment_status?: string | null
+          status?: string | null
+          total_amount: number
+          trainer_id: string
+          updated_at?: string
+        }
+        Update: {
+          booking_date?: string
+          booking_time?: string
+          client_id?: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          payment_status?: string | null
+          status?: string | null
+          total_amount?: number
+          trainer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_bookings_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "personal_trainers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trainer_reviews: {
+        Row: {
+          booking_id: string
+          client_id: string
+          created_at: string
+          id: string
+          rating: number
+          review_text: string | null
+          trainer_id: string
+        }
+        Insert: {
+          booking_id: string
+          client_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          review_text?: string | null
+          trainer_id: string
+        }
+        Update: {
+          booking_id?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+          trainer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "trainer_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_reviews_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "personal_trainers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          audio_intro_url: string | null
+          available_hours: string[] | null
+          bio: string | null
+          birth_date: string | null
+          city: string | null
+          created_at: string
+          extra_photos_urls: string[] | null
+          full_name: string
+          id: string
+          instagram_url: string | null
+          intention: string | null
+          is_verified: boolean | null
+          main_photo_url: string | null
+          neighborhood: string | null
+          primary_gym: string | null
+          training_goals: string[] | null
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          audio_intro_url?: string | null
+          available_hours?: string[] | null
+          bio?: string | null
+          birth_date?: string | null
+          city?: string | null
+          created_at?: string
+          extra_photos_urls?: string[] | null
+          full_name: string
+          id?: string
+          instagram_url?: string | null
+          intention?: string | null
+          is_verified?: boolean | null
+          main_photo_url?: string | null
+          neighborhood?: string | null
+          primary_gym?: string | null
+          training_goals?: string[] | null
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          audio_intro_url?: string | null
+          available_hours?: string[] | null
+          bio?: string | null
+          birth_date?: string | null
+          city?: string | null
+          created_at?: string
+          extra_photos_urls?: string[] | null
+          full_name?: string
+          id?: string
+          instagram_url?: string | null
+          intention?: string | null
+          is_verified?: boolean | null
+          main_photo_url?: string | null
+          neighborhood?: string | null
+          primary_gym?: string | null
+          training_goals?: string[] | null
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vigilantes: {
+        Row: {
+          condominium_id: string | null
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          registration: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          condominium_id?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          registration: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          condominium_id?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          registration?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vigilantes_condominium_id_fkey"
+            columns: ["condominium_id"]
+            isOneToOne: false
+            referencedRelation: "condominiums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_sessions: {
+        Row: {
+          created_at: string
+          feedback_organizer: string | null
+          feedback_partner: string | null
+          gym_name: string
+          id: string
+          organizer_confirmed: boolean | null
+          organizer_id: string
+          partner_confirmed: boolean | null
+          partner_id: string
+          rating_organizer: number | null
+          rating_partner: number | null
+          status: string | null
+          updated_at: string
+          workout_date: string
+          workout_time: string
+          workout_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          feedback_organizer?: string | null
+          feedback_partner?: string | null
+          gym_name: string
+          id?: string
+          organizer_confirmed?: boolean | null
+          organizer_id: string
+          partner_confirmed?: boolean | null
+          partner_id: string
+          rating_organizer?: number | null
+          rating_partner?: number | null
+          status?: string | null
+          updated_at?: string
+          workout_date: string
+          workout_time: string
+          workout_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          feedback_organizer?: string | null
+          feedback_partner?: string | null
+          gym_name?: string
+          id?: string
+          organizer_confirmed?: boolean | null
+          organizer_id?: string
+          partner_confirmed?: boolean | null
+          partner_id?: string
+          rating_organizer?: number | null
+          rating_partner?: number | null
+          status?: string | null
+          updated_at?: string
+          workout_date?: string
+          workout_time?: string
+          workout_type?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -444,9 +996,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -454,21 +1017,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -486,14 +1053,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -509,14 +1078,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -532,14 +1103,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -547,20 +1120,24 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
