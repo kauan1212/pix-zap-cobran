@@ -37,7 +37,7 @@ export const useAutoBillingPlans = () => {
           variant: "destructive",
         });
       } else {
-        setPlans(data || []);
+        setPlans((data as AutoBillingPlan[]) || []);
       }
     } catch (error) {
       console.error('Error loading plans:', error);

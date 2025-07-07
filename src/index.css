@@ -15,8 +15,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 174 72% 56%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -99,5 +99,95 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* PWA and Mobile optimizations */
+  .safe-area-insets {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Touch optimizations */
+  button, [role="button"] {
+    @apply touch-manipulation;
+  }
+
+  /* Prevent zoom on input focus */
+  input, textarea, select {
+    font-size: 16px;
+  }
+
+  /* Smooth scrolling for mobile */
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Remove highlights on touch */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  /* Mobile-first responsive containers */
+  .mobile-container {
+    @apply w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl;
+  }
+
+  .mobile-card {
+    @apply bg-card border border-border rounded-lg shadow-sm;
+    @apply p-4 sm:p-6;
+  }
+
+  .mobile-button {
+    @apply min-h-[44px] min-w-[44px]; /* Apple recommended touch target */
+    @apply touch-manipulation;
+  }
+
+  .mobile-input {
+    @apply min-h-[44px] text-base; /* Prevent zoom on iOS */
+  }
+
+  /* Mobile navigation */
+  .mobile-nav {
+    @apply fixed bottom-0 left-0 right-0 z-50;
+    @apply bg-background border-t border-border;
+    @apply pb-safe; /* Safe area for home indicator */
+  }
+
+  /* Loading states optimized for mobile */
+  .mobile-loading {
+    @apply flex items-center justify-center min-h-[200px];
+  }
+
+  /* Mobile-optimized forms */
+  .mobile-form {
+    @apply space-y-4 sm:space-y-6;
+  }
+
+  .mobile-form-field {
+    @apply space-y-2;
+  }
+
+  .mobile-form-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* PWA splash screen support */
+  .pwa-splash {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--background)));
   }
 }

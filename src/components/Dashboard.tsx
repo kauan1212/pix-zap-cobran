@@ -11,6 +11,7 @@ import PixKeyManager from './PixKeyManager';
 import RecurringPlansManager from './RecurringPlansManager';
 import SubscriptionManager from './SubscriptionManager';
 import AutoBillingManager from './AutoBillingManager';
+import MobileLayout from './MobileLayout';
 
 interface Client {
   id: string;
@@ -70,51 +71,54 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <MobileLayout>
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">₿</span>
-              </div>
-              <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Gestão de Planos
-              </span>
+      <header className="bg-background border-b border-border mb-6">
+        <div className="flex justify-between items-center h-16 px-4 sm:px-0">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">L</span>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Olá, {user?.email}</span>
-              <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Sair
-              </Button>
-            </div>
+            <span className="font-bold text-lg sm:text-xl text-foreground">
+              LocAuto
+            </span>
+          </div>
+          
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <span className="hidden sm:inline text-muted-foreground text-sm">
+              {user?.email}
+            </span>
+            <Button variant="outline" onClick={handleLogout} size="sm" className="mobile-button">
+              <LogOut className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Sair</span>
+            </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="clients" className="flex items-center space-x-2">
-              <Users className="w-4 h-4" />
-              <span>Clientes</span>
-            </TabsTrigger>
-            <TabsTrigger value="billings" className="flex items-center space-x-2">
-              <Receipt className="w-4 h-4" />
-              <span>Cobranças</span>
-            </TabsTrigger>
-            <TabsTrigger value="auto-billing" className="flex items-center space-x-2">
-              <Clock className="w-4 h-4" />
-              <span>Automático</span>
-            </TabsTrigger>
-            <TabsTrigger value="subscriptions" className="flex items-center space-x-2">
-              <CreditCard className="w-4 h-4" />
-              <span>Assinaturas</span>
-            </TabsTrigger>
-          </TabsList>
+      <div className="py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          {/* Mobile-optimized tab navigation */}
+          <div className="w-full overflow-x-auto scrollbar-hide">
+            <TabsList className="grid w-max grid-cols-4 min-w-full">
+              <TabsTrigger value="clients" className="flex items-center gap-2 mobile-button px-3">
+                <Users className="w-4 h-4" />
+                <span className="text-xs sm:text-sm">Clientes</span>
+              </TabsTrigger>
+              <TabsTrigger value="billings" className="flex items-center gap-2 mobile-button px-3">
+                <Receipt className="w-4 h-4" />
+                <span className="text-xs sm:text-sm">Cobranças</span>
+              </TabsTrigger>
+              <TabsTrigger value="auto-billing" className="flex items-center gap-2 mobile-button px-3">
+                <Clock className="w-4 h-4" />
+                <span className="text-xs sm:text-sm">Auto</span>
+              </TabsTrigger>
+              <TabsTrigger value="subscriptions" className="flex items-center gap-2 mobile-button px-3">
+                <CreditCard className="w-4 h-4" />
+                <span className="text-xs sm:text-sm">Planos</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="clients">
             <ClientManager onDataChange={handleDataChange} />
@@ -133,7 +137,7 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </MobileLayout>
   );
 };
 
