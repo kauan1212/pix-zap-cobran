@@ -54,6 +54,7 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
     interest: '',
   });
   const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [extraServices, setExtraServices] = useState<any[]>([]);
 
   const PIX_KEY = '15991653601';
 
@@ -62,6 +63,14 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
       loadBillings();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (selectedClientId) {
+      loadExtraServices();
+    } else {
+      setExtraServices([]);
+    }
+  }, [selectedClientId]);
 
   const loadBillings = async () => {
     if (!user) return;
@@ -90,6 +99,24 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
         ...item,
         status: item.status as 'pending' | 'paid' | 'overdue' | 'cancelled'
       })) || []);
+    }
+  };
+
+  const loadExtraServices = async () => {
+    if (!selectedClientId) {
+      setExtraServices([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('extra_services')
+      .select('*')
+      .eq('client_id', selectedClientId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast({ title: 'Erro ao carregar serviços extras', description: error.message, variant: 'destructive' });
+      setExtraServices([]);
+    } else {
+      setExtraServices(data || []);
     }
   };
 
@@ -326,6 +353,7 @@ Obrigado!`;
           <TabsList className="mb-4">
             <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
             <TabsTrigger value="pagas">Pagas</TabsTrigger>
+            <TabsTrigger value="extras">Serviços Extras</TabsTrigger>
           </TabsList>
           <TabsContent value="pendentes">
             <div>
@@ -490,6 +518,92 @@ Obrigado!`;
                   ))}
                 </div>
               )}
+            </div>
+          </TabsContent>
+          <TabsContent value="extras">
+            <div>
+              <h3 className="text-lg font-bold text-blue-700 mb-2">Serviços Extras</h3>
+              {/* Formulário para novo serviço extra */}
+              <form
+                className="space-y-4 mb-6"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!selectedClientId) {
+                    toast({ title: "Selecione um cliente" });
+                    return;
+                  }
+                  const description = (e.target as any).description.value;
+                  const amount = parseFloat((e.target as any).amount.value);
+                  if (!description || !amount) {
+                    toast({ title: "Preencha todos os campos" });
+                    return;
+                  }
+                  const { error } = await supabase.from('extra_services').insert({
+                    client_id: selectedClientId,
+                    description,
+                    amount,
+                  });
+                  if (error) {
+                    toast({ title: "Erro ao criar serviço extra", description: error.message, variant: "destructive" });
+                  } else {
+                    toast({ title: "Serviço extra criado!" });
+                    (e.target as HTMLFormElement).reset();
+                    loadExtraServices();
+                  }
+                }}
+              >
+                <div>
+                  <Label htmlFor="description">Descrição do serviço</Label>
+                  <Input id="description" name="description" required />
+                </div>
+                <div>
+                  <Label htmlFor="amount">Valor (R$)</Label>
+                  <Input id="amount" name="amount" type="number" step="0.01" required />
+                </div>
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Cadastrar Serviço Extra</Button>
+              </form>
+              {/* Lista de serviços extras */}
+              <div className="space-y-4">
+                {extraServices.length === 0 ? (
+                  <Card><CardContent className="text-center py-8 text-gray-500">Nenhum serviço extra cadastrado</CardContent></Card>
+                ) : (
+                  extraServices.map((service) => (
+                    <Card key={service.id} className="hover:shadow-lg transition-shadow duration-200">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-lg">{service.description}</CardTitle>
+                            <CardDescription className="text-sm text-gray-600 mt-1">R$ {service.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</CardDescription>
+                          </div>
+                          <div className="text-right">
+                            <Badge className={`text-xs ${service.status === 'pago' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{service.status === 'pago' ? 'Pago' : 'Pendente'}</Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {service.status !== 'pago' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              const { error } = await supabase.from('extra_services').update({ status: 'pago', paid_at: new Date().toISOString() }).eq('id', service.id);
+                              if (error) {
+                                toast({ title: "Erro ao marcar como pago", description: error.message, variant: "destructive" });
+                              } else {
+                                toast({ title: "Serviço extra marcado como pago!" });
+                                loadExtraServices();
+                              }
+                            }}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            Marcar como Pago
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
             </div>
           </TabsContent>
         </Tabs>

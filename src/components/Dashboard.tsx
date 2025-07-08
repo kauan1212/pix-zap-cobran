@@ -11,8 +11,8 @@ import PixKeyManager from './PixKeyManager';
 import RecurringPlansManager from './RecurringPlansManager';
 import SubscriptionManager from './SubscriptionManager';
 import AutoBillingManager from './AutoBillingManager';
-import ClientPortalTestLink from './ClientPortalTestLink';
 import MobileLayout from './MobileLayout';
+import ExtraServicesManager from './ExtraServicesManager';
 
 interface Client {
   id: string;
@@ -97,18 +97,18 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <div className="mb-6">
-        <ClientPortalTestLink />
-      </div>
-
       <div className="py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile-optimized tab navigation */}
           <div className="w-full overflow-x-auto scrollbar-hide">
-            <TabsList className="grid w-max grid-cols-4 min-w-full">
+            <TabsList className="grid w-max grid-cols-5 min-w-full">
               <TabsTrigger value="clients" className="flex items-center gap-2 mobile-button px-3">
                 <Users className="w-4 h-4" />
                 <span className="text-xs sm:text-sm">Clientes</span>
+              </TabsTrigger>
+              <TabsTrigger value="extras" className="flex items-center gap-2 mobile-button px-3">
+                <Settings className="w-4 h-4" />
+                <span className="text-xs sm:text-sm">Serviços Extras</span>
               </TabsTrigger>
               <TabsTrigger value="billings" className="flex items-center gap-2 mobile-button px-3">
                 <Receipt className="w-4 h-4" />
@@ -127,6 +127,10 @@ const Dashboard = () => {
 
           <TabsContent value="clients">
             <ClientManager onDataChange={handleDataChange} />
+          </TabsContent>
+
+          <TabsContent value="extras">
+            <ExtraServicesManager clients={clients} />
           </TabsContent>
 
           <TabsContent value="billings">

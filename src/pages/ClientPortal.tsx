@@ -37,12 +37,19 @@ const ClientPortal = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pixKey] = useState<string>('15991653601');
+  const [extraServices, setExtraServices] = useState<any[]>([]);
 
   useEffect(() => {
     if (token) {
       loadClientData();
     }
   }, [token]);
+
+  useEffect(() => {
+    if (client) {
+      loadExtraServices();
+    }
+  }, [client]);
 
   const loadClientData = async () => {
     try {
@@ -125,6 +132,16 @@ const ClientPortal = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadExtraServices = async () => {
+    if (!client) return;
+    const { data, error } = await supabase
+      .from('extra_services')
+      .select('*')
+      .eq('client_id', client.id)
+      .order('created_at', { ascending: false });
+    if (!error) setExtraServices(data || []);
   };
 
   const copyPixKey = () => {
@@ -286,6 +303,7 @@ const ClientPortal = () => {
           <TabsList className="mb-4">
             <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
             <TabsTrigger value="pagas">Pagas</TabsTrigger>
+            <TabsTrigger value="extras">Serviços Extras</TabsTrigger>
           </TabsList>
           <TabsContent value="pendentes">
             {pendingBillings.length > 0 ? (
@@ -447,6 +465,76 @@ const ClientPortal = () => {
                   <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma cobrança pendente</h3>
                   <p className="text-gray-600">Você não possui cobranças pendentes no momento.</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          <TabsContent value="extras">
+            {extraServices.length > 0 ? (
+              <div className="space-y-4">
+                {extraServices.map((service) => (
+                  <Card key={service.id} className={service.status === 'pago' ? 'border-l-4 border-l-green-400 opacity-75' : 'border-l-4 border-l-yellow-400'}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">{service.description}</CardTitle>
+                          <CardDescription className="flex items-center space-x-4 mt-2">
+                            <span>Serviço extra</span>
+                          </CardDescription>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-gray-900">
+                            R$ {service.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                          <Badge className={`text-xs ${service.status === 'pago' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{service.status === 'pago' ? 'Pago' : 'Pendente'}</Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {service.status !== 'pago' && (
+                        <>
+                          <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                            <h4 className="font-semibold text-blue-900 mb-2">Para pagar via PIX:</h4>
+                            <p className="text-sm text-blue-800 mb-3">
+                              1. Copie a chave PIX: <span className="font-mono font-bold break-all">{pixKey}</span>
+                            </p>
+                            <Button onClick={copyPixKey} className="w-full mb-2">
+                              <Copy className="w-4 h-4 mr-2" />
+                              Copiar Chave PIX
+                            </Button>
+                            <Button
+                              className="w-full bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => {
+                                const saudacao = (() => {
+                                  const hora = new Date().getHours();
+                                  if (hora >= 5 && hora < 12) return 'Bom dia';
+                                  if (hora >= 12 && hora < 18) return 'Boa tarde';
+                                  return 'Boa noite';
+                                })();
+                                const valor = service.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                                const texto = `${saudacao}! Já realizei o pagamento do serviço extra: *${service.description}*\nValor de *${valor}*.\nSegue o comprovante!`;
+                                const url = `https://wa.me/5515991653601?text=${encodeURIComponent(texto)}`;
+                                window.open(url, '_blank');
+                              }}
+                            >
+                              Enviar comprovante via WhatsApp
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                      {service.status === 'pago' && service.paid_at && (
+                        <div className="text-green-700 font-semibold">Pago em {new Date(service.paid_at).toLocaleDateString('pt-BR')}</div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum serviço extra</h3>
+                  <p className="text-gray-600">Você não possui serviços extras no momento.</p>
                 </CardContent>
               </Card>
             )}

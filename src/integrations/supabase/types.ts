@@ -987,6 +987,44 @@ export type Database = {
         }
         Relationships: []
       }
+      extra_services: {
+        Row: {
+          id: string;
+          client_id: string;
+          description: string;
+          amount: number;
+          status: string;
+          created_at: string;
+          paid_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          client_id: string;
+          description: string;
+          amount: number;
+          status?: string;
+          created_at?: string;
+          paid_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          client_id?: string;
+          description?: string;
+          amount?: number;
+          status?: string;
+          created_at?: string;
+          paid_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "extra_services_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          }
+        ];
+      }
     }
     Views: {
       [_ in never]: never
