@@ -17,7 +17,18 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      manifest,
+      manifest: {
+        name: manifest.name,
+        short_name: manifest.short_name,
+        description: manifest.description,
+        start_url: manifest.start_url,
+        scope: manifest.scope,
+        display: 'standalone' as const,
+        background_color: manifest.background_color,
+        theme_color: manifest.theme_color,
+        orientation: 'portrait-primary' as const,
+        icons: manifest.icons
+      },
       includeAssets: ['favicon.ico', 'logo-192.png', 'logo-512.png', 'logo-maskable.png'],
       devOptions: {
         enabled: true
