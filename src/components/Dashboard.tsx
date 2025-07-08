@@ -81,7 +81,7 @@ const Dashboard = () => {
               <span className="text-primary-foreground font-bold text-sm">L</span>
             </div>
             <span className="font-bold text-lg sm:text-xl text-foreground">
-              LocAuto
+              Minhas finanças - Moto
             </span>
           </div>
           

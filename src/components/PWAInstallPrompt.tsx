@@ -100,10 +100,10 @@ const PWAInstallPrompt: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Smartphone className="h-5 w-5 text-primary" />
-              Instalar LocAuto
+              Instalar Minhas finanças - Moto
             </DialogTitle>
             <DialogDescription>
-              Instale o LocAuto na sua tela inicial para acesso rápido e melhor experiência.
+              Instale o Minhas finanças - Moto na sua tela inicial para acesso rápido e melhor experiência.
             </DialogDescription>
           </DialogHeader>
           

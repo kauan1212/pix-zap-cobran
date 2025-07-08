@@ -1,7 +1,7 @@
 {
-  "name": "LocAuto - Sistema de Gestão",
-  "short_name": "LocAuto",
-  "description": "Sistema completo de gestão de planos, assinaturas e cobranças automáticas",
+  "name": "Minhas finanças - Moto",
+  "short_name": "Finanças Moto",
+  "description": "Gestão de finanças e cobranças para aluguel de motos.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
