@@ -50,17 +50,28 @@ const ClientPortal = () => {
 
       console.log('Loading client data for token:', token);
 
-      // Buscar o token e validar
+      if (!token) {
+        setError('Token não fornecido');
+        return;
+      }
+
+      // Buscar o token e validar - SEM autenticação para permitir acesso público
       const { data: tokenData, error: tokenError } = await supabase
         .from('client_access_tokens')
         .select('client_id, expires_at')
         .eq('token', token)
-        .single();
+        .maybeSingle();
 
       console.log('Token query result:', { tokenData, tokenError });
 
-      if (tokenError || !tokenData) {
-        console.error('Token not found:', tokenError);
+      if (tokenError) {
+        console.error('Error fetching token:', tokenError);
+        setError('Erro ao validar token de acesso');
+        return;
+      }
+
+      if (!tokenData) {
+        console.error('Token not found');
         setError('Link inválido ou não encontrado');
         return;
       }
