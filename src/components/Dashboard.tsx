@@ -11,6 +11,7 @@ import PixKeyManager from './PixKeyManager';
 import RecurringPlansManager from './RecurringPlansManager';
 import SubscriptionManager from './SubscriptionManager';
 import AutoBillingManager from './AutoBillingManager';
+import ClientPortalTestLink from './ClientPortalTestLink';
 import MobileLayout from './MobileLayout';
 
 interface Client {
@@ -95,6 +96,10 @@ const Dashboard = () => {
           </div>
         </div>
       </header>
+
+      <div className="mb-6">
+        <ClientPortalTestLink />
+      </div>
 
       <div className="py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
