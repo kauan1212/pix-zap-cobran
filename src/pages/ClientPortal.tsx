@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Calendar, DollarSign, Copy, AlertCircle, CheckCircle2, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { MotivationalPayments } from "../components/MotivationalPayments";
 
 interface Client {
   id: string;
@@ -289,7 +290,7 @@ const ClientPortal = () => {
           <TabsContent value="pendentes">
             {pendingBillings.length > 0 ? (
               <div className="space-y-4">
-                {pendingBillings.map((billing) => (
+                {pendingBillings.map((billing, idx) => (
                   <Card key={billing.id} className="border-l-4 border-l-yellow-400">
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -320,7 +321,7 @@ const ClientPortal = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="bg-blue-50 p-4 rounded-lg mb-4">
                         <h4 className="font-semibold text-blue-900 mb-2">Para pagar via PIX:</h4>
                         <p className="text-sm text-blue-800 mb-3">
                           1. Copie a chave PIX: <span className="font-mono font-bold break-all">{pixKey}</span>
@@ -354,6 +355,13 @@ const ClientPortal = () => {
                           Enviar comprovante via WhatsApp
                         </Button>
                       </div>
+                      {/* Frase motivacional para esta parcela */}
+                      <MotivationalPayments payments={[{
+                        id: billing.id,
+                        name: billing.description,
+                        value: billing.amount,
+                        dueDate: new Date(billing.due_date).toLocaleDateString('pt-BR'),
+                      }]} phraseIndex={idx} />
                     </CardContent>
                   </Card>
                 ))}
@@ -413,9 +421,15 @@ const ClientPortal = () => {
                         <Button
                           className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white"
                           onClick={() => {
+                            // Saudação dinâmica
+                            const hora = new Date().getHours();
+                            let saudacao = "";
+                            if (hora >= 5 && hora < 12) saudacao = "Bom dia";
+                            else if (hora >= 12 && hora < 18) saudacao = "Boa tarde";
+                            else saudacao = "Boa noite";
                             const data = new Date(billing.due_date).toLocaleDateString('pt-BR');
                             const valor = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                            const texto = `Olá! Já realizei o pagamento referente ao vencimento do dia ${data}, parcela ${billing.description}, no valor de ${valor}.`;
+                            const texto = `${saudacao}! Já realizei o pagamento referente do dia: *${data}*\nParcela *${billing.description}*\nValor de *${valor}*.\nSegue o comprovante!`;
                             const url = `https://wa.me/5515991653601?text=${encodeURIComponent(texto)}`;
                             window.open(url, '_blank');
                           }}
@@ -431,8 +445,8 @@ const ClientPortal = () => {
               <Card>
                 <CardContent className="text-center py-12">
                   <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma cobrança paga</h3>
-                  <p className="text-gray-600">Você ainda não possui cobranças pagas.</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma cobrança pendente</h3>
+                  <p className="text-gray-600">Você não possui cobranças pendentes no momento.</p>
                 </CardContent>
               </Card>
             )}
