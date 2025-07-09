@@ -280,25 +280,6 @@ const ClientPortal = () => {
               </p>
             </CardContent>
           </Card>
-
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-blue-900">Chave PIX</CardTitle>
-              <Copy className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold text-blue-900 font-mono mb-2 break-all">
-                {pixKey}
-              </div>
-              <Button 
-                onClick={copyPixKey} 
-                size="sm" 
-                className="w-full"
-              >
-                Copiar Chave PIX
-              </Button>
-            </CardContent>
-          </Card>
         </div>
         {/* Novas caixas de totais de serviços extras */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
