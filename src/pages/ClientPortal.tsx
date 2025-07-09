@@ -212,6 +212,8 @@ const ClientPortal = () => {
   const paidBillings = billings.filter(b => b.status === 'paid');
   const totalPending = pendingBillings.reduce((sum, billing) => sum + billing.amount, 0);
   const totalPaid = paidBillings.reduce((sum, billing) => sum + billing.amount, 0);
+  const totalExtraPaid = extraServices.filter(s => s.status === 'pago').reduce((sum, s) => sum + s.amount, 0);
+  const totalExtraPending = extraServices.filter(s => s.status !== 'pago').reduce((sum, s) => sum + s.amount, 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -295,6 +297,37 @@ const ClientPortal = () => {
               >
                 Copiar Chave PIX
               </Button>
+            </CardContent>
+          </Card>
+        </div>
+        {/* Novas caixas de totais de serviços extras */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-blue-900">Total Serviços Pago</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                R$ {totalExtraPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-gray-500">
+                {extraServices.filter(s => s.status === 'pago').length} serviço(s) pago(s)
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-blue-900">Total Serviços Pendente</CardTitle>
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">
+                R$ {totalExtraPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-gray-500">
+                {extraServices.filter(s => s.status !== 'pago').length} serviço(s) pendente(s)
+              </p>
             </CardContent>
           </Card>
         </div>
