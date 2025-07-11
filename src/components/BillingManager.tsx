@@ -13,6 +13,7 @@ import { PlusCircle, FileText, Calendar, DollarSign, MessageSquare, Copy } from 
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ReceiptUpload from '@/components/ReceiptUpload';
+import { Switch } from '@/components/ui/switch';
 
 interface Client {
   id: string;
@@ -362,84 +363,140 @@ Obrigado!`;
               {pendingBillings.length === 0 ? (
                 <Card><CardContent className="text-center py-8 text-gray-500">Nenhuma cobrança pendente</CardContent></Card>
               ) : (
-                <div className="space-y-4">
-                  {pendingBillings.map((billing) => (
-                    <Card key={billing.id} className="hover:shadow-lg transition-shadow duration-200">
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-lg">{billing.description}</CardTitle>
-                            <CardDescription className="text-sm text-gray-600 mt-1">
-                              {billing.description}
-                            </CardDescription>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xl font-bold text-gray-900">
-                              R$ {billing.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </p>
-                            <Badge className={`text-xs ${getStatusColor(billing.status)}`}>
-                              {getStatusText(billing.status)}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-4 text-sm text-gray-600">
-                            <div className="flex items-center space-x-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
-                            </div>
-                            {billing.penalty && (
-                              <div className="flex items-center space-x-1">
-                                <DollarSign className="w-4 h-4" />
-                                <span>Multa: R$ {billing.penalty.toFixed(2)}</span>
+                <>
+                  {selectedClientId !== '' && pendingBillings.length > 0 && (
+                    <div className="flex items-center mb-4 space-x-2">
+                      <Switch
+                        checked={pendingBillings.every(b => b.interest === 10)}
+                        onCheckedChange={async (checked) => {
+                          // Atualiza todas as cobranças pendentes do cliente
+                          const { error } = await supabase
+                            .from('billings')
+                            .update({ interest: checked ? 10 : null })
+                            .in('id', pendingBillings.map(b => b.id));
+                          if (!error) {
+                            setBillings(prev => prev.map(b =>
+                              b.client_id === selectedClientId && (b.status === 'pending' || b.status === 'overdue')
+                                ? { ...b, interest: checked ? 10 : null }
+                                : b
+                            ));
+                          } else {
+                            toast({ title: 'Erro ao atualizar juros em massa', description: error.message, variant: 'destructive' });
+                          }
+                        }}
+                      />
+                      <span className="text-xs">Ativar juros 10% para todas as cobranças pendentes</span>
+                    </div>
+                  )}
+                  <div className="space-y-4">
+                    {pendingBillings.map((billing) => {
+                      // Verifica se está vencida
+                      const isOverdue = new Date(billing.due_date) < new Date(new Date().toDateString());
+                      // Valor com juros se aplicável
+                      const showInterest = billing.interest === 10 && isOverdue;
+                      const amountWithInterest = showInterest ? billing.amount * 1.1 : billing.amount;
+
+                      // Função para alternar juros
+                      const handleToggleInterest = async (checked: boolean) => {
+                        // Atualiza no banco e no estado local
+                        const { error } = await supabase
+                          .from('billings')
+                          .update({ interest: checked ? 10 : null })
+                          .eq('id', billing.id);
+                        if (!error) {
+                          setBillings(prev => prev.map(b => b.id === billing.id ? { ...b, interest: checked ? 10 : null } : b));
+                        } else {
+                          toast({ title: 'Erro ao atualizar juros', description: error.message, variant: 'destructive' });
+                        }
+                      };
+
+                      return (
+                        <Card key={billing.id} className="hover:shadow-lg transition-shadow duration-200">
+                          <CardHeader>
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <CardTitle className="text-lg">{billing.description}</CardTitle>
+                                <CardDescription className="text-sm text-gray-600 mt-1">
+                                  {billing.description}
+                                </CardDescription>
                               </div>
-                            )}
-                            {billing.interest && (
-                              <span>Juros: {billing.interest}% ao dia</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => copyWhatsAppMessage(billing)}
-                          >
-                            <MessageSquare className="w-4 h-4 mr-2" />
-                            Copiar Mensagem WhatsApp
-                          </Button>
-                          {billing.status === 'pending' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateBillingStatus(billing.id, 'paid')}
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              Marcar como Paga
-                            </Button>
-                          )}
-                          {billing.status === 'pending' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateBillingStatus(billing.id, 'cancelled')}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              Cancelar
-                            </Button>
-                          )}
-                          {billing.status === 'paid' && billing.payment_date && (
-                            <Badge variant="outline" className="text-green-600">
-                              Pago em {new Date(billing.payment_date).toLocaleDateString('pt-BR')}
-                            </Badge>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                              <div className="text-right">
+                                <p className="text-xl font-bold text-gray-900">
+                                  R$ {amountWithInterest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  {showInterest && <span className="text-xs text-red-600 ml-1">(com juros)</span>}
+                                </p>
+                                <Badge className={`text-xs ${getStatusColor(billing.status)}`}>{getStatusText(billing.status)}</Badge>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                <div className="flex items-center space-x-1">
+                                  <Calendar className="w-4 h-4" />
+                                  <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
+                                </div>
+                                {billing.penalty && (
+                                  <div className="flex items-center space-x-1">
+                                    <DollarSign className="w-4 h-4" />
+                                    <span>Multa: R$ {billing.penalty.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {billing.interest && (
+                                  <span>Juros: {billing.interest}%</span>
+                                )}
+                              </div>
+                              {/* Switch de juros */}
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  checked={billing.interest === 10}
+                                  onCheckedChange={handleToggleInterest}
+                                  disabled={billing.status !== 'pending'}
+                                />
+                                <span className="text-xs">Juros 10%</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => copyWhatsAppMessage(billing)}
+                              >
+                                <MessageSquare className="w-4 h-4 mr-2" />
+                                Copiar Mensagem WhatsApp
+                              </Button>
+                              {billing.status === 'pending' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => updateBillingStatus(billing.id, 'paid')}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  Marcar como Paga
+                                </Button>
+                              )}
+                              {billing.status === 'pending' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => updateBillingStatus(billing.id, 'cancelled')}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  Cancelar
+                                </Button>
+                              )}
+                              {billing.status === 'paid' && billing.payment_date && (
+                                <Badge variant="outline" className="text-green-600">
+                                  Pago em {new Date(billing.payment_date).toLocaleDateString('pt-BR')}
+                                </Badge>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </div>
           </TabsContent>
