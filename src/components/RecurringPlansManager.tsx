@@ -465,7 +465,7 @@ const RecurringPlansManager = ({ clients, onDataChange }: RecurringPlansManagerP
                     )}
                     {plan.interest && (
                       <div className="flex items-center space-x-1">
-                        <span>Juros: {plan.interest}% ao mês</span>
+                        <span>Multa 10% após o dia de vencimento</span>
                       </div>
                     )}
                   </div>

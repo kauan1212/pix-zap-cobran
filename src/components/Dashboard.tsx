@@ -13,6 +13,7 @@ import SubscriptionManager from './SubscriptionManager';
 import AutoBillingManager from './AutoBillingManager';
 import MobileLayout from './MobileLayout';
 import ExtraServicesManager from './ExtraServicesManager';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface Client {
   id: string;
@@ -25,6 +26,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('clients');
   const [clients, setClients] = useState<Client[]>([]);
+  const { profile } = useUserProfile();
 
   useEffect(() => {
     if (user) {
@@ -101,7 +103,7 @@ const Dashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile-optimized tab navigation */}
           <div className="w-full overflow-x-auto scrollbar-hide">
-            <TabsList className="grid w-max grid-cols-5 min-w-full">
+            <TabsList className="grid w-max grid-cols-6 min-w-full">
               <TabsTrigger value="clients" className="flex items-center gap-2 mobile-button px-3">
                 <Users className="w-4 h-4" />
                 <span className="text-xs sm:text-sm">Clientes</span>
@@ -122,6 +124,12 @@ const Dashboard = () => {
                 <CreditCard className="w-4 h-4" />
                 <span className="text-xs sm:text-sm">Planos</span>
               </TabsTrigger>
+              {profile?.is_admin && (
+                <TabsTrigger value="accounts" className="flex items-center gap-2 mobile-button px-3">
+                  <Repeat className="w-4 h-4" />
+                  <span className="text-xs sm:text-sm">Controle de Contas</span>
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -144,6 +152,11 @@ const Dashboard = () => {
           <TabsContent value="subscriptions">
             <SubscriptionManager clients={clients} onDataChange={handleDataChange} />
           </TabsContent>
+          {profile?.is_admin && (
+            <TabsContent value="accounts">
+              <div className="p-6 text-center text-lg text-gray-700">Em breve: Gerenciamento de contas de usuário</div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </MobileLayout>

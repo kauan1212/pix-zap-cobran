@@ -385,7 +385,7 @@ Obrigado!`;
                           }
                         }}
                       />
-                      <span className="text-xs">Ativar juros 10% para todas as cobranças pendentes</span>
+                      <span className="text-xs">Multa 10% após o dia de vencimento (todas as cobranças)</span>
                     </div>
                   )}
                   <div className="space-y-4">
@@ -453,7 +453,7 @@ Obrigado!`;
                                   onCheckedChange={handleToggleInterest}
                                   disabled={billing.status !== 'pending'}
                                 />
-                                <span className="text-xs">Juros 10%</span>
+                                <span className="text-xs">Multa 10% após o dia de vencimento</span>
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-2">

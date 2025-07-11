@@ -338,7 +338,7 @@ const ClientPortal = () => {
                               <span className="text-red-600">Multa: R$ {billing.penalty.toFixed(2)}</span>
                             )}
                             {billing.interest && billing.interest > 0 && (
-                              <span className="text-red-600">Juros: {billing.interest}% ao mês</span>
+                              <span className="text-red-600">Multa 10% após o dia de vencimento</span>
                             )}
                           </CardDescription>
                         </div>
