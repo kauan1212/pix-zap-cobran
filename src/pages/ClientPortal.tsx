@@ -208,8 +208,9 @@ const ClientPortal = () => {
     );
   }
 
-  const pendingBillings = billings.filter(b => b.status === 'pending' || b.status === 'overdue');
-  const paidBillings = billings.filter(b => b.status === 'paid');
+  // Ordenação das listas por data de vencimento
+  const pendingBillings = billings.filter(b => b.status === 'pending' || b.status === 'overdue').sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+  const paidBillings = billings.filter(b => b.status === 'paid').sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
   const totalPending = pendingBillings.reduce((sum, billing) => sum + billing.amount, 0);
   const totalPaid = paidBillings.reduce((sum, billing) => sum + billing.amount, 0);
   const totalExtraPaid = extraServices.filter(s => s.status === 'pago').reduce((sum, s) => sum + s.amount, 0);
@@ -469,6 +470,7 @@ const ClientPortal = () => {
                           Enviar comprovante via WhatsApp
                         </Button>
                       )}
+                      {/* Removido o botão de desfazer pagamento */}
                     </CardContent>
                   </Card>
                 ))}

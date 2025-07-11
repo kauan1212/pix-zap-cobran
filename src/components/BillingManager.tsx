@@ -292,8 +292,9 @@ Obrigado!`;
   const filteredBillings = selectedClientId
     ? billings.filter(b => b.client_id === selectedClientId)
     : [];
-  const pendingBillings = filteredBillings.filter(b => b.status === 'pending' || b.status === 'overdue');
-  const paidBillings = filteredBillings.filter(b => b.status === 'paid');
+  // Ordenação das listas por data de vencimento
+  const pendingBillings = filteredBillings.filter(b => b.status === 'pending' || b.status === 'overdue').sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+  const paidBillings = filteredBillings.filter(b => b.status === 'paid').sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
   return (
     <div className="space-y-6">
@@ -497,9 +498,19 @@ Obrigado!`;
                             Copiar Mensagem WhatsApp
                           </Button>
                           {billing.status === 'paid' && billing.payment_date && (
-                            <Badge variant="outline" className="text-green-600">
-                              Pago em {new Date(billing.payment_date).toLocaleDateString('pt-BR')}
-                            </Badge>
+                            <>
+                              <Badge variant="outline" className="text-green-600">
+                                Pago em {new Date(billing.payment_date).toLocaleDateString('pt-BR')}
+                              </Badge>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-yellow-600 hover:text-yellow-700 ml-2"
+                                onClick={() => updateBillingStatus(billing.id, 'pending')}
+                              >
+                                Desfazer pagamento
+                              </Button>
+                            </>
                           )}
                         </div>
                         {billing.receipt_url ? (
