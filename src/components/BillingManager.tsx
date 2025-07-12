@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PlusCircle, FileText, Calendar, DollarSign, MessageSquare, Copy } from 'lucide-react';
+import { PlusCircle, FileText, Calendar, DollarSign, MessageSquare, Copy, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ReceiptUpload from '@/components/ReceiptUpload';
@@ -253,6 +253,119 @@ Obrigado!`;
     });
   };
 
+  const generateOverdueMessage = (billing: Billing) => {
+    const client = billing.clients;
+    if (!client) return '';
+
+    const dueDate = new Date(billing.due_date).toLocaleDateString('pt-BR');
+    const amount = billing.amount.toLocaleString('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    });
+
+    // Calcular dias de atraso
+    const today = new Date();
+    const dueDateObj = new Date(billing.due_date);
+    const daysOverdue = Math.floor((today.getTime() - dueDateObj.getTime()) / (1000 * 60 * 60 * 24));
+
+    let message = `Prezado(a) ${client.name},
+
+Informamos que a parcela referente a ${billing.description} está em atraso desde ${dueDate} (${daysOverdue} dia${daysOverdue > 1 ? 's' : ''} de atraso).
+
+📋 Detalhes da cobrança:
+• Valor: ${amount}
+• Vencimento: ${dueDate}
+• Descrição: ${billing.description}
+
+⚠️ Para evitar acréscimos de multas e juros, solicitamos a regularização do pagamento o quanto antes.
+
+💳 Pagamento via PIX:
+Chave: ${PIX_KEY}
+
+Após o pagamento, envie o comprovante para confirmação.
+
+Agradecemos a atenção e aguardamos o retorno.
+
+Atenciosamente,
+Equipe Financeira`;
+
+    // Adicionar informações sobre multas se aplicável
+    if (billing.penalty || billing.interest) {
+      message += `\n\n📌 Observações importantes:`;
+      if (billing.penalty) {
+        message += `\n• Multa por atraso: R$ ${billing.penalty.toFixed(2)}`;
+      }
+      if (billing.interest) {
+        message += `\n• Juros de mora: ${billing.interest}% ao dia`;
+      }
+    }
+
+    return message;
+  };
+
+  const copyOverdueMessage = (billing: Billing) => {
+    const message = generateOverdueMessage(billing);
+    navigator.clipboard.writeText(message);
+    toast({
+      title: "Mensagem de atraso copiada!",
+      description: "Mensagem copiada para a área de transferência.",
+    });
+  };
+
+  const generateDueDateMessage = (billing: Billing) => {
+    const client = billing.clients;
+    if (!client) return '';
+
+    const dueDate = new Date(billing.due_date).toLocaleDateString('pt-BR');
+    const amount = billing.amount.toLocaleString('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    });
+
+    let message = `Prezado(a) ${client.name},
+
+Informamos que a parcela referente a ${billing.description} vence hoje (${dueDate}).
+
+📋 Detalhes da cobrança:
+• Valor: ${amount}
+• Vencimento: ${dueDate}
+• Descrição: ${billing.description}
+
+💳 Para realizar o pagamento via PIX, utilize a chave:
+${PIX_KEY}
+
+⚠️ Importante: Para evitar acréscimos de multas e juros, recomendamos o pagamento até o final do dia.
+
+Após o pagamento, envie o comprovante para confirmação.
+
+Agradecemos a atenção.
+
+Atenciosamente,
+Equipe Financeira`;
+
+    // Adicionar informações sobre multas se aplicável
+    if (billing.penalty || billing.interest) {
+      message += `\n\n📌 Observações importantes:`;
+      if (billing.penalty) {
+        message += `\n• Multa por atraso: R$ ${billing.penalty.toFixed(2)}`;
+      }
+      if (billing.interest) {
+        message += `\n• Juros de mora: ${billing.interest}% ao dia`;
+      }
+    }
+
+    return message;
+  };
+
+  const copyDueDateMessage = (billing: Billing) => {
+    const message = generateDueDateMessage(billing);
+    navigator.clipboard.writeText(message);
+    toast({
+      title: "Mensagem de vencimento copiada!",
+      description: "Mensagem copiada para a área de transferência.",
+    });
+  };
+
   const copyPixKey = () => {
     navigator.clipboard.writeText(PIX_KEY);
     toast({
@@ -296,6 +409,24 @@ Obrigado!`;
   // Ordenação das listas por data de vencimento
   const pendingBillings = filteredBillings.filter(b => b.status === 'pending' || b.status === 'overdue').sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
   const paidBillings = filteredBillings.filter(b => b.status === 'paid').sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+
+  // NOVA função: mensagem de aviso de possível atraso (antes do vencimento ou no dia)
+  const generatePreDueMessage = (billing: Billing) => {
+    const client = billing.clients;
+    if (!client) return '';
+    const dueDate = new Date(billing.due_date).toLocaleDateString('pt-BR');
+    const amount = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    let message = `Prezado(a) ${client.name},\n\nLembramos que a parcela referente a ${billing.description} vence em breve (${dueDate}).\n\n📋 Detalhes da cobrança:\n• Valor: ${amount}\n• Vencimento: ${dueDate}\n• Descrição: ${billing.description}\n\n💳 Para realizar o pagamento via PIX, utilize a chave:\n${PIX_KEY}\n\nEvite juros e multas realizando o pagamento até a data de vencimento.\n\nApós o pagamento, envie o comprovante para confirmação.\n\nAgradecemos a atenção.\n\nAtenciosamente,\nEquipe Financeira`;
+    return message;
+  };
+  const copyPreDueMessage = (billing: Billing) => {
+    const message = generatePreDueMessage(billing);
+    navigator.clipboard.writeText(message);
+    toast({
+      title: "Mensagem de lembrete copiada!",
+      description: "Mensagem copiada para a área de transferência.",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -355,6 +486,7 @@ Obrigado!`;
           <TabsList className="mb-4">
             <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
             <TabsTrigger value="pagas">Pagas</TabsTrigger>
+            <TabsTrigger value="todas">Todas as Cobranças</TabsTrigger>
             <TabsTrigger value="extras">Serviços Extras</TabsTrigger>
           </TabsList>
           <TabsContent value="pendentes">
@@ -457,14 +589,31 @@ Obrigado!`;
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => copyWhatsAppMessage(billing)}
-                              >
-                                <MessageSquare className="w-4 h-4 mr-2" />
-                                Copiar Mensagem WhatsApp
-                              </Button>
+                              {/* Botão de aviso de possível atraso (antes do vencimento ou no dia) */}
+                              {new Date(billing.due_date) >= new Date(new Date().toDateString()) && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => copyPreDueMessage(billing)}
+                                  className="text-orange-600 hover:text-orange-700 border-orange-200"
+                                >
+                                  <Clock className="w-4 h-4 mr-2" />
+                                  Copiar Aviso de Vencimento
+                                </Button>
+                              )}
+                              {/* Botão de aviso de atraso (apenas para vencidas) */}
+                              {new Date(billing.due_date) < new Date(new Date().toDateString()) && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => copyOverdueMessage(billing)}
+                                  className="text-red-600 hover:text-red-700 border-red-200"
+                                >
+                                  <AlertTriangle className="w-4 h-4 mr-2" />
+                                  Copiar Aviso de Atraso
+                                </Button>
+                              )}
+                              {/* Demais botões (pagar, cancelar, etc) */}
                               {billing.status === 'pending' && (
                                 <Button
                                   variant="outline"
@@ -584,6 +733,123 @@ Obrigado!`;
                       </CardContent>
                     </Card>
                   ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          <TabsContent value="todas">
+            <div>
+              <h3 className="text-lg font-bold text-blue-700 mb-2">Todas as Cobranças</h3>
+              {billings.length === 0 ? (
+                <Card><CardContent className="text-center py-8 text-gray-500">Nenhuma cobrança encontrada</CardContent></Card>
+              ) : (
+                <div className="space-y-4">
+                  {billings
+                    .filter(b => b.status === 'pending' || b.status === 'overdue')
+                    .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+                    .map((billing) => {
+                      // Verifica se está vencida
+                      const isOverdue = new Date(billing.due_date) < new Date(new Date().toDateString());
+                      // Valor com juros se aplicável
+                      const showInterest = billing.interest === 10 && isOverdue;
+                      const amountWithInterest = showInterest ? billing.amount * 1.1 : billing.amount;
+
+                      return (
+                        <Card key={billing.id} className={`hover:shadow-lg transition-shadow duration-200 ${isOverdue ? 'border-l-4 border-l-red-400' : ''}`}>
+                          <CardHeader>
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <CardTitle className="text-lg">{billing.description}</CardTitle>
+                                <CardDescription className="text-sm text-gray-600 mt-1">
+                                  Cliente: {billing.clients?.name || 'Cliente desconhecido'}
+                                </CardDescription>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xl font-bold text-gray-900">
+                                  R$ {amountWithInterest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  {showInterest && <span className="text-xs text-red-600 ml-1">(com juros)</span>}
+                                </p>
+                                <Badge className={`text-xs ${getStatusColor(billing.status)}`}>
+                                  {getStatusText(billing.status)}
+                                  {isOverdue && <span className="ml-1">• Vencida</span>}
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                <div className="flex items-center space-x-1">
+                                  <Calendar className="w-4 h-4" />
+                                  <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
+                                </div>
+                                {billing.penalty && (
+                                  <div className="flex items-center space-x-1">
+                                    <DollarSign className="w-4 h-4" />
+                                    <span>Multa: R$ {billing.penalty.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {billing.interest && (
+                                  <span>Juros: {billing.interest}%</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => copyWhatsAppMessage(billing)}
+                              >
+                                <MessageSquare className="w-4 h-4 mr-2" />
+                                Copiar Mensagem WhatsApp
+                              </Button>
+                              {isOverdue && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => copyOverdueMessage(billing)}
+                                  className="text-red-600 hover:text-red-700 border-red-200"
+                                >
+                                  <AlertTriangle className="w-4 h-4 mr-2" />
+                                  Copiar Mensagem de Atraso
+                                </Button>
+                              )}
+                              {!isOverdue && new Date(billing.due_date).toDateString() === new Date().toDateString() && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => copyDueDateMessage(billing)}
+                                  className="text-orange-600 hover:text-orange-700 border-orange-200"
+                                >
+                                  <Clock className="w-4 h-4 mr-2" />
+                                  Copiar Mensagem de Vencimento
+                                </Button>
+                              )}
+                              {billing.status === 'pending' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => updateBillingStatus(billing.id, 'paid')}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  Marcar como Paga
+                                </Button>
+                              )}
+                              {billing.status === 'pending' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => updateBillingStatus(billing.id, 'cancelled')}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  Cancelar
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                 </div>
               )}
             </div>

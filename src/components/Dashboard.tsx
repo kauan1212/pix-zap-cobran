@@ -14,6 +14,7 @@ import AutoBillingManager from './AutoBillingManager';
 import MobileLayout from './MobileLayout';
 import ExtraServicesManager from './ExtraServicesManager';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import AccountManager from './AccountManager';
 
 interface Client {
   id: string;
@@ -154,7 +155,7 @@ const Dashboard = () => {
           </TabsContent>
           {profile?.is_admin && (
             <TabsContent value="accounts">
-              <div className="p-6 text-center text-lg text-gray-700">Em breve: Gerenciamento de contas de usuário</div>
+              <AccountManager />
             </TabsContent>
           )}
         </Tabs>
