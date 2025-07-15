@@ -915,24 +915,44 @@ Equipe Financeira`;
                         </div>
                       </CardHeader>
                       <CardContent>
-                        {service.status !== 'pago' && (
+                        <div className="flex gap-2">
+                          {service.status !== 'pago' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                const { error } = await supabase.from('extra_services').update({ status: 'pago', paid_at: new Date().toISOString() }).eq('id', service.id);
+                                if (error) {
+                                  toast({ title: "Erro ao marcar como pago", description: error.message, variant: "destructive" });
+                                } else {
+                                  toast({ title: "Serviço extra marcado como pago!" });
+                                  loadExtraServices();
+                                }
+                              }}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              Marcar como Pago
+                            </Button>
+                          )}
                           <Button
-                            variant="outline"
+                            variant="destructive"
                             size="sm"
                             onClick={async () => {
-                              const { error } = await supabase.from('extra_services').update({ status: 'pago', paid_at: new Date().toISOString() }).eq('id', service.id);
-                              if (error) {
-                                toast({ title: "Erro ao marcar como pago", description: error.message, variant: "destructive" });
-                              } else {
-                                toast({ title: "Serviço extra marcado como pago!" });
-                                loadExtraServices();
+                              if (window.confirm('Tem certeza que deseja deletar este serviço extra? Essa ação não pode ser desfeita.')) {
+                                const { error } = await supabase.from('extra_services').delete().eq('id', service.id);
+                                if (error) {
+                                  toast({ title: "Erro ao deletar serviço extra", description: error.message, variant: "destructive" });
+                                } else {
+                                  toast({ title: "Serviço extra deletado!" });
+                                  loadExtraServices();
+                                }
                               }
                             }}
-                            className="text-green-600 hover:text-green-700"
+                            className="text-red-600 hover:text-red-700"
                           >
-                            Marcar como Pago
+                            Deletar
                           </Button>
-                        )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))
