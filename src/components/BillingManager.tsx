@@ -56,12 +56,14 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
   });
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [extraServices, setExtraServices] = useState<any[]>([]);
+  const [userPixKey, setUserPixKey] = useState<string>('');
 
-  const PIX_KEY = '15991653601';
+  
 
   useEffect(() => {
     if (user) {
       loadBillings();
+      loadUserPixKey();
     }
   }, [user]);
 
@@ -72,6 +74,28 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
       setExtraServices([]);
     }
   }, [selectedClientId]);
+
+  const loadUserPixKey = async () => {
+    if (!user) return;
+
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('pix_key')
+        .eq('id', user.id)
+        .single();
+
+      if (!error && profileData?.pix_key) {
+        setUserPixKey(profileData.pix_key);
+      } else {
+        // Fallback para email se não houver chave PIX configurada
+        setUserPixKey(user.email || '');
+      }
+    } catch (error) {
+      console.error('Error loading PIX key:', error);
+      setUserPixKey(user.email || '');
+    }
+  };
 
   const loadBillings = async () => {
     if (!user) return;
@@ -226,7 +250,7 @@ Você tem uma nova cobrança:
 📝 Descrição: ${billing.description}
 
 💳 Para pagar via PIX, use a chave:
-${PIX_KEY}
+${userPixKey}
 
 Após o pagamento, envie o comprovante para confirmarmos.
 
@@ -281,7 +305,7 @@ Informamos que a parcela referente a ${billing.description} está em atraso desd
 ⚠️ Para evitar acréscimos de multas e juros, solicitamos a regularização do pagamento o quanto antes.
 
 💳 Pagamento via PIX:
-Chave: ${PIX_KEY}
+Chave: ${userPixKey}
 
 Após o pagamento, envie o comprovante para confirmação.
 
@@ -333,7 +357,7 @@ Informamos que a parcela referente a ${billing.description} vence hoje (${dueDat
 • Descrição: ${billing.description}
 
 💳 Para realizar o pagamento via PIX, utilize a chave:
-${PIX_KEY}
+${userPixKey}
 
 ⚠️ Importante: Para evitar acréscimos de multas e juros, recomendamos o pagamento até o final do dia.
 
@@ -368,10 +392,10 @@ Equipe Financeira`;
   };
 
   const copyPixKey = () => {
-    navigator.clipboard.writeText(PIX_KEY);
+    navigator.clipboard.writeText(userPixKey);
     toast({
       title: "Chave PIX copiada!",
-      description: `Chave PIX ${PIX_KEY} copiada para área de transferência.`,
+      description: `Chave PIX ${userPixKey} copiada para área de transferência.`,
     });
   };
 
@@ -417,7 +441,7 @@ Equipe Financeira`;
     if (!client) return '';
     const dueDate = new Date(billing.due_date).toLocaleDateString('pt-BR');
     const amount = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    let message = `Prezado(a) ${client.name},\n\nLembramos que a parcela referente a ${billing.description} vence em breve (${dueDate}).\n\n📋 Detalhes da cobrança:\n• Valor: ${amount}\n• Vencimento: ${dueDate}\n• Descrição: ${billing.description}\n\n💳 Para realizar o pagamento via PIX, utilize a chave:\n${PIX_KEY}\n\nEvite juros e multas realizando o pagamento até a data de vencimento.\n\nApós o pagamento, envie o comprovante para confirmação.\n\nAgradecemos a atenção.\n\nAtenciosamente,\nEquipe Financeira`;
+    let message = `Prezado(a) ${client.name},\n\nLembramos que a parcela referente a ${billing.description} vence em breve (${dueDate}).\n\n📋 Detalhes da cobrança:\n• Valor: ${amount}\n• Vencimento: ${dueDate}\n• Descrição: ${billing.description}\n\n💳 Para realizar o pagamento via PIX, utilize a chave:\n${userPixKey}\n\nEvite juros e multas realizando o pagamento até a data de vencimento.\n\nApós o pagamento, envie o comprovante para confirmação.\n\nAgradecemos a atenção.\n\nAtenciosamente,\nEquipe Financeira`;
     return message;
   };
   const copyPreDueMessage = (billing: Billing) => {
@@ -464,7 +488,7 @@ Equipe Financeira`;
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-blue-900">Chave PIX do Sistema</h3>
-              <p className="text-blue-700 font-mono text-lg">{PIX_KEY}</p>
+              <p className="text-blue-700 font-mono text-lg">{userPixKey}</p>
             </div>
             <Button onClick={copyPixKey} variant="outline" size="sm">
               <Copy className="w-4 h-4 mr-2" />

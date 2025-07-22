@@ -36,12 +36,13 @@ const ClientPortal = () => {
   const [billings, setBillings] = useState<Billing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pixKey] = useState<string>('15991653601');
+  const [pixKey, setPixKey] = useState<string>('');
   const [extraServices, setExtraServices] = useState<any[]>([]);
 
   useEffect(() => {
     if (token) {
       loadClientData();
+      loadPixKey();
     }
   }, [token]);
 
@@ -50,6 +51,37 @@ const ClientPortal = () => {
       loadExtraServices();
     }
   }, [client]);
+
+  const loadPixKey = async () => {
+    try {
+      // Buscar a chave PIX através de uma billing existente
+      const { data: billingData, error: billingError } = await supabase
+        .from('billings')
+        .select('user_id')
+        .limit(1)
+        .single();
+
+      if (!billingError && billingData?.user_id) {
+        // Agora buscar a chave PIX do usuário
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('pix_key')
+          .eq('id', billingData.user_id)
+          .single();
+
+        if (!profileError && profileData?.pix_key) {
+          setPixKey(profileData.pix_key);
+        } else {
+          setPixKey('15991653601');
+        }
+      } else {
+        setPixKey('15991653601');
+      }
+    } catch (error) {
+      console.error('Error loading PIX key:', error);
+      setPixKey('15991653601');
+    }
+  };
 
   const loadClientData = async () => {
     try {
@@ -145,10 +177,10 @@ const ClientPortal = () => {
   };
 
   const copyPixKey = () => {
-    navigator.clipboard.writeText('15991653601');
+    navigator.clipboard.writeText(pixKey);
     toast({
       title: "Chave PIX copiada!",
-      description: `Chave PIX 15991653601 copiada para área de transferência.`,
+      description: `Chave PIX ${pixKey} copiada para área de transferência.`,
     });
   };
 
@@ -381,7 +413,7 @@ const ClientPortal = () => {
                             const data = new Date(billing.due_date).toLocaleDateString('pt-BR');
                             const valor = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                             const texto = `Olá! Já realizei o pagamento referente ao vencimento do dia ${data}, parcela ${billing.description}, no valor de ${valor}.`;
-                            const url = `https://wa.me/5515991653601?text=${encodeURIComponent(texto)}`;
+                            const url = `https://wa.me/${client?.phone ? client.phone.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
                             window.open(url, '_blank');
                           }}
                         >
@@ -463,7 +495,7 @@ const ClientPortal = () => {
                             const data = new Date(billing.due_date).toLocaleDateString('pt-BR');
                             const valor = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                             const texto = `${saudacao}! Já realizei o pagamento referente do dia: *${data}*\nParcela *${billing.description}*\nValor de *${valor}*.\nSegue o comprovante!`;
-                            const url = `https://wa.me/5515991653601?text=${encodeURIComponent(texto)}`;
+                            const url = `https://wa.me/${client?.phone ? client.phone.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
                             window.open(url, '_blank');
                           }}
                         >
@@ -529,7 +561,7 @@ const ClientPortal = () => {
                                 })();
                                 const valor = service.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                                 const texto = `${saudacao}! Já realizei o pagamento do serviço extra: *${service.description}*\nValor de *${valor}*.\nSegue o comprovante!`;
-                                const url = `https://wa.me/5515991653601?text=${encodeURIComponent(texto)}`;
+                                const url = `https://wa.me/${client?.phone ? client.phone.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
                                 window.open(url, '_blank');
                               }}
                             >
