@@ -3,13 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Users, Receipt, CreditCard, Settings, Repeat, Clock, Key } from 'lucide-react';
+import { LogOut, Users, Receipt, Settings, Clock, Key, UserCog } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ClientManager from './ClientManager';
 import BillingManager from './BillingManager';
 import PixSettings from './PixSettings';
 import RecurringPlansManager from './RecurringPlansManager';
-import SubscriptionManager from './SubscriptionManager';
 import AutoBillingManager from './AutoBillingManager';
 import MobileLayout from './MobileLayout';
 import ExtraServicesManager from './ExtraServicesManager';
@@ -104,7 +103,7 @@ const Dashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile-optimized tab navigation */}
           <div className="w-full overflow-x-auto scrollbar-hide">
-            <TabsList className="grid w-max grid-cols-7 min-w-full">
+            <TabsList className="grid w-max grid-cols-6 min-w-full">
               <TabsTrigger value="clients" className="flex items-center gap-2 mobile-button px-3">
                 <Users className="w-4 h-4" />
                 <span className="text-xs sm:text-sm">Clientes</span>
@@ -119,11 +118,7 @@ const Dashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="auto-billing" className="flex items-center gap-2 mobile-button px-3">
                 <Clock className="w-4 h-4" />
-                <span className="text-xs sm:text-sm">Auto</span>
-              </TabsTrigger>
-              <TabsTrigger value="subscriptions" className="flex items-center gap-2 mobile-button px-3">
-                <CreditCard className="w-4 h-4" />
-                <span className="text-xs sm:text-sm">Planos</span>
+                <span className="text-xs sm:text-sm">Novo Plano</span>
               </TabsTrigger>
               <TabsTrigger value="pix-settings" className="flex items-center gap-2 mobile-button px-3">
                 <Key className="w-4 h-4" />
@@ -131,7 +126,7 @@ const Dashboard = () => {
               </TabsTrigger>
               {profile?.is_admin && (
                 <TabsTrigger value="accounts" className="flex items-center gap-2 mobile-button px-3">
-                  <Repeat className="w-4 h-4" />
+                  <UserCog className="w-4 h-4" />
                   <span className="text-xs sm:text-sm">Controle de Contas</span>
                 </TabsTrigger>
               )}
@@ -152,10 +147,6 @@ const Dashboard = () => {
 
           <TabsContent value="auto-billing">
             <AutoBillingManager clients={clients} onDataChange={handleDataChange} />
-          </TabsContent>
-
-          <TabsContent value="subscriptions">
-            <SubscriptionManager clients={clients} onDataChange={handleDataChange} />
           </TabsContent>
 
           <TabsContent value="pix-settings">

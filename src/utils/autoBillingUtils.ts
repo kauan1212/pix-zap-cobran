@@ -3,8 +3,9 @@ import { AutoBillingPlan } from '@/types/autoBilling';
 
 export const generateBillingsForPlan = (plan: AutoBillingPlan, userId: string) => {
   const billings = [];
-  const startDate = new Date(plan.start_date);
-  const endDate = new Date(plan.end_date);
+  // Criar datas em timezone local para evitar problemas de offset
+  const startDate = new Date(plan.start_date + 'T00:00:00');
+  const endDate = new Date(plan.end_date + 'T23:59:59');
   let currentDate = new Date(startDate);
 
   // Validate dates
@@ -23,7 +24,7 @@ export const generateBillingsForPlan = (plan: AutoBillingPlan, userId: string) =
       client_id: plan.client_id,
       amount: plan.amount,
       description: plan.description,
-      due_date: currentDate.toISOString().split('T')[0],
+      due_date: `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`,
       auto_billing_plan_id: plan.id,
       status: 'pending'
     });
