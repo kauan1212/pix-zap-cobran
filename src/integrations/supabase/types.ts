@@ -582,6 +582,9 @@ export type Database = {
           is_admin: boolean | null
           pix_key: string | null
           updated_at: string | null
+          access_granted: boolean | null
+          account_frozen: boolean | null
+          frozen_reason: string | null
         }
         Insert: {
           created_at?: string | null
@@ -591,6 +594,9 @@ export type Database = {
           is_admin?: boolean | null
           pix_key?: string | null
           updated_at?: string | null
+          access_granted?: boolean | null
+          account_frozen?: boolean | null
+          frozen_reason?: string | null
         }
         Update: {
           created_at?: string | null
@@ -600,6 +606,9 @@ export type Database = {
           is_admin?: boolean | null
           pix_key?: string | null
           updated_at?: string | null
+          access_granted?: boolean | null
+          account_frozen?: boolean | null
+          frozen_reason?: string | null
         }
         Relationships: []
       }

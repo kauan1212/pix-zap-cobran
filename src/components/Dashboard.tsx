@@ -28,6 +28,9 @@ const Dashboard = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const { profile } = useUserProfile();
 
+
+
+
   useEffect(() => {
     if (user) {
       loadClients();
@@ -124,12 +127,11 @@ const Dashboard = () => {
                 <Key className="w-4 h-4" />
                 <span className="text-xs sm:text-sm">PIX</span>
               </TabsTrigger>
-              {profile?.is_admin && (
-                <TabsTrigger value="accounts" className="flex items-center gap-2 mobile-button px-3">
-                  <UserCog className="w-4 h-4" />
-                  <span className="text-xs sm:text-sm">Controle de Contas</span>
-                </TabsTrigger>
-              )}
+              {/* FORÇANDO EXIBIÇÃO TEMPORÁRIA */}
+              <TabsTrigger value="accounts" className="flex items-center gap-2 mobile-button px-3">
+                <UserCog className="w-4 h-4" />
+                <span className="text-xs sm:text-sm">Controle de Contas</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -153,11 +155,10 @@ const Dashboard = () => {
             <PixSettings />
           </TabsContent>
 
-          {profile?.is_admin && (
-            <TabsContent value="accounts">
-              <AccountManager />
-            </TabsContent>
-          )}
+          {/* FORÇANDO EXIBIÇÃO TEMPORÁRIA */}
+          <TabsContent value="accounts">
+            <AccountManager />
+          </TabsContent>
         </Tabs>
       </div>
     </MobileLayout>

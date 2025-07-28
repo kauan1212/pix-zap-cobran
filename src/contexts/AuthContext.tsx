@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  checkAccessControl: (userId: string) => Promise<{ accessGranted: boolean; accountFrozen: boolean; frozenReason?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,6 +60,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
 
+      // Verificar controle de acesso após login bem-sucedido
+      if (data.user) {
+        const accessControl = await checkAccessControl(data.user.id);
+        
+        if (!accessControl.accessGranted) {
+          toast({
+            title: "Acesso não autorizado",
+            description: "Sua conta ainda não foi liberada pelo administrador. Entre em contato para regularizar sua situação.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+          return false;
+        }
+
+        if (accessControl.accountFrozen) {
+          toast({
+            title: "Conta congelada",
+            description: accessControl.frozenReason || "Sua conta foi congelada por falta de pagamento. Entre em contato para regularizar sua situação.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+          return false;
+        }
+      }
+
       toast({
         title: "Login realizado com sucesso!",
         description: `Bem-vindo de volta!`,
@@ -99,7 +125,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Se não houve erro, o usuário foi criado com sucesso
       toast({
         title: "Conta criada com sucesso!",
-        description: "Você já pode acessar o sistema",
+        description: "Aguarde a confirmação do administrador para ter acesso à conta",
       });
 
       // Aguarda o perfil ser criado pelo trigger antes de atualizar a chave Pix
@@ -123,7 +149,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (perfilExiste) {
           await supabase
             .from('profiles')
-            .update({ pix_key: defaultPixKey })
+            .update({ 
+              pix_key: defaultPixKey,
+              access_granted: false, // Por padrão, acesso não liberado
+              account_frozen: false,
+              frozen_reason: null
+            })
             .eq('id', data.user.id);
         }
       }
@@ -136,6 +167,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         variant: "destructive",
       });
       return false;
+    }
+  };
+
+  const checkAccessControl = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('access_granted, account_frozen, frozen_reason')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Erro ao verificar controle de acesso:', error);
+        return { accessGranted: false, accountFrozen: false };
+      }
+
+      return {
+        accessGranted: data?.access_granted ?? false,
+        accountFrozen: data?.account_frozen ?? false,
+        frozenReason: data?.frozen_reason
+      };
+    } catch (error) {
+      console.error('Erro ao verificar controle de acesso:', error);
+      return { accessGranted: false, accountFrozen: false };
     }
   };
 
@@ -163,6 +218,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       login,
       register,
       logout,
+      checkAccessControl,
     }}>
       {children}
     </AuthContext.Provider>
