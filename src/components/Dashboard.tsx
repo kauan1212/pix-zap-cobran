@@ -86,13 +86,13 @@ const Dashboard = () => {
               <span className="text-primary-foreground font-bold text-sm">L</span>
             </div>
             <span className="font-bold text-lg sm:text-xl text-foreground">
-              Minhas finanças - Moto
+              {profile?.company || 'Minhas finanças'}
             </span>
           </div>
           
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <span className="hidden sm:inline text-muted-foreground text-sm">
-              {user?.email}
+            <span className="text-muted-foreground text-sm">
+              {profile?.full_name || user?.email}
             </span>
             <Button variant="outline" onClick={handleLogout} size="sm" className="mobile-button">
               <LogOut className="w-4 h-4 sm:mr-2" />
@@ -106,7 +106,7 @@ const Dashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile-optimized tab navigation */}
           <div className="w-full overflow-x-auto scrollbar-hide">
-            <TabsList className="grid w-max grid-cols-6 min-w-full">
+            <TabsList className={`grid w-max ${user?.email === 'kauankg@hotmail.com' ? 'grid-cols-6' : 'grid-cols-5'} min-w-full`}>
               <TabsTrigger value="clients" className="flex items-center gap-2 mobile-button px-3">
                 <Users className="w-4 h-4" />
                 <span className="text-xs sm:text-sm">Clientes</span>
@@ -127,11 +127,13 @@ const Dashboard = () => {
                 <Key className="w-4 h-4" />
                 <span className="text-xs sm:text-sm">PIX</span>
               </TabsTrigger>
-              {/* FORÇANDO EXIBIÇÃO TEMPORÁRIA */}
-              <TabsTrigger value="accounts" className="flex items-center gap-2 mobile-button px-3">
-                <UserCog className="w-4 h-4" />
-                <span className="text-xs sm:text-sm">Controle de Contas</span>
-              </TabsTrigger>
+              {/* Controle de Contas - Apenas para kauankg@hotmail.com */}
+              {user?.email === 'kauankg@hotmail.com' && (
+                <TabsTrigger value="accounts" className="flex items-center gap-2 mobile-button px-3">
+                  <UserCog className="w-4 h-4" />
+                  <span className="text-xs sm:text-sm">Controle de Contas</span>
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -155,10 +157,12 @@ const Dashboard = () => {
             <PixSettings />
           </TabsContent>
 
-          {/* FORÇANDO EXIBIÇÃO TEMPORÁRIA */}
-          <TabsContent value="accounts">
-            <AccountManager />
-          </TabsContent>
+          {/* Controle de Contas - Apenas para kauankg@hotmail.com */}
+          {user?.email === 'kauankg@hotmail.com' && (
+            <TabsContent value="accounts">
+              <AccountManager />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </MobileLayout>

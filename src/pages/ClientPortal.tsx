@@ -361,7 +361,7 @@ const ClientPortal = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <CardTitle className="text-lg">{billing.description}</CardTitle>
-                          <CardDescription className="flex items-center space-x-4 mt-2">
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Calendar className="w-4 h-4" />
                               <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
@@ -372,7 +372,7 @@ const ClientPortal = () => {
                             {billing.interest && billing.interest > 0 && (
                               <span className="text-red-600">Multa 10% após o dia de vencimento</span>
                             )}
-                          </CardDescription>
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-gray-900">
@@ -450,7 +450,7 @@ const ClientPortal = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <CardTitle className="text-lg">{billing.description}</CardTitle>
-                          <CardDescription className="flex items-center space-x-4 mt-2">
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Calendar className="w-4 h-4" />
                               <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
@@ -461,7 +461,7 @@ const ClientPortal = () => {
                                 <span>Pago em: {new Date(billing.payment_date).toLocaleDateString('pt-BR')}</span>
                               </div>
                             )}
-                          </CardDescription>
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-gray-900">
@@ -526,9 +526,9 @@ const ClientPortal = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <CardTitle className="text-lg">{service.description}</CardTitle>
-                          <CardDescription className="flex items-center space-x-4 mt-2">
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <span>Serviço extra</span>
-                          </CardDescription>
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-gray-900">

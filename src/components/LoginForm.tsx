@@ -4,15 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff } from 'lucide-react';
 import EmailConfirmationModal from './EmailConfirmationModal';
 
 const LoginForm = () => {
+  const { login, register } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [company, setCompany] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -25,32 +27,7 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        if (error.message.includes('Email not confirmed')) {
-          toast({
-            title: "Email não confirmado",
-            description: "Por favor, verifique seu email e clique no link de confirmação antes de fazer login.",
-            variant: "destructive",
-          });
-        } else if (error.message.includes('Invalid login credentials')) {
-          toast({
-            title: "Credenciais inválidas",
-            description: "Email ou senha incorretos. Verifique seus dados e tente novamente.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Erro ao fazer login",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      }
+      await login(email, password);
     } catch (error) {
       toast({
         title: "Erro inesperado",
@@ -86,38 +63,16 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-          emailRedirectTo: `${window.location.origin}/`,
-        },
-      });
-
-      if (error) {
-        if (error.message.includes('User already registered')) {
-          toast({
-            title: "Email já cadastrado",
-            description: "Este email já está registrado. Tente fazer login ou use outro email.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Erro ao criar conta",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      } else {
+      const success = await register(email, password, fullName, company);
+      
+      if (success) {
         setRegisteredEmail(email);
         setShowEmailModal(true);
         // Limpar formulário
         setEmail('');
         setPassword('');
         setFullName('');
+        setCompany('');
         setConfirmPassword('');
       }
     } catch (error) {
@@ -205,6 +160,18 @@ const LoginForm = () => {
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="company">Empresa</Label>
+                    <Input
+                      id="company"
+                      type="text"
+                      value={company}
+                      onChange={(e) => setCompany(e.target.value)}
                       required
                       disabled={loading}
                     />
