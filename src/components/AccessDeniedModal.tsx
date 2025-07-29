@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Lock, Phone, Mail, Clock } from 'lucide-react';
+import { Lock, Phone, Clock } from 'lucide-react';
 
 interface AccessDeniedModalProps {
   isOpen: boolean;
@@ -37,11 +37,7 @@ const AccessDeniedModal: React.FC<AccessDeniedModalProps> = ({ isOpen, onClose }
               <p>Para acelerar o processo de liberação, entre em contato conosco:</p>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                <span>WhatsApp: (11) 99999-9999</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                <span>Email: suporte@empresa.com</span>
+                <span>WhatsApp: (15) 99165-3601</span>
               </div>
             </div>
           </div>
