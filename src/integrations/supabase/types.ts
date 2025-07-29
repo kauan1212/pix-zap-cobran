@@ -578,7 +578,6 @@ export type Database = {
           created_at: string | null
           email: string | null
           full_name: string | null
-          company: string | null
           id: string
           is_admin: boolean | null
           pix_key: string | null
@@ -591,7 +590,6 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           full_name?: string | null
-          company?: string | null
           id: string
           is_admin?: boolean | null
           pix_key?: string | null
@@ -604,7 +602,6 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           full_name?: string | null
-          company?: string | null
           id?: string
           is_admin?: boolean | null
           pix_key?: string | null
