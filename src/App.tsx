@@ -48,6 +48,10 @@ const App = () => {
   useEffect(() => {
     if (user) {
       checkAccountStatus();
+    } else {
+      // Fechar modais quando o usuário for deslogado
+      setShowFrozenModal(false);
+      setShowAccessDeniedModal(false);
     }
   }, [user]);
 
@@ -91,7 +95,9 @@ const App = () => {
         {/* Modais de controle de acesso */}
         <AccountFrozenModal 
           isOpen={showFrozenModal} 
-          onClose={() => setShowFrozenModal(false)}
+          onClose={() => {
+            setShowFrozenModal(false);
+          }}
           frozenReason={frozenReason}
         />
         <AccessDeniedModal 

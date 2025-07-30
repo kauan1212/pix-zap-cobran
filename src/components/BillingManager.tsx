@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PlusCircle, FileText, Calendar, DollarSign, MessageSquare, Copy, AlertTriangle, Clock } from 'lucide-react';
+import { FileText, Calendar, DollarSign, MessageSquare, Copy, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ReceiptUpload from '@/components/ReceiptUpload';
@@ -45,15 +45,8 @@ interface BillingManagerProps {
 const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
   const { user } = useAuth();
   const [billings, setBillings] = useState<Billing[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    client_id: '',
-    amount: '',
-    description: '',
-    due_date: '',
-    penalty: '',
-    interest: '',
-  });
+
+
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [extraServices, setExtraServices] = useState<any[]>([]);
   const [userPixKey, setUserPixKey] = useState<string>('');
@@ -146,56 +139,7 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) return;
 
-    const { data, error } = await supabase
-      .from('billings')
-      .insert([
-        {
-          user_id: user.id,
-          client_id: formData.client_id,
-          amount: parseFloat(formData.amount),
-          description: formData.description,
-          due_date: formData.due_date,
-          penalty: formData.penalty ? parseFloat(formData.penalty) : null,
-          interest: formData.interest ? parseFloat(formData.interest) : null,
-        }
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      toast({
-        title: "Erro ao criar cobrança",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      const selectedClient = clients.find(c => c.id === formData.client_id);
-      toast({
-        title: "Cobrança criada!",
-        description: `Cobrança de R$ ${parseFloat(formData.amount).toFixed(2)} criada para ${selectedClient?.name}.`,
-      });
-      resetForm();
-      setIsDialogOpen(false);
-      loadBillings();
-      onDataChange();
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      client_id: '',
-      amount: '',
-      description: '',
-      due_date: '',
-      penalty: '',
-      interest: '',
-    });
-  };
 
   const updateBillingStatus = async (billingId: string, status: Billing['status']) => {
     const updateData: any = { status };
@@ -471,14 +415,6 @@ Equipe Financeira`;
               ))}
             </SelectContent>
           </Select>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm} className="bg-blue-600 hover:bg-blue-700">
-                <PlusCircle className="w-4 h-4 mr-2" />
-                Nova Cobrança
-              </Button>
-            </DialogTrigger>
-          </Dialog>
         </div>
       </div>
 
