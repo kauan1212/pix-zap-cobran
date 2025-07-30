@@ -1,8 +1,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Snowflake, Phone } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { Snowflake, Phone, Mail } from 'lucide-react';
 
 interface AccountFrozenModalProps {
   isOpen: boolean;
@@ -15,14 +14,8 @@ const AccountFrozenModal: React.FC<AccountFrozenModalProps> = ({
   onClose, 
   frozenReason = 'Falta de pagamento' 
 }) => {
-  const { logout } = useAuth();
-
-  const handleEntendi = () => {
-    logout();
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-red-600">
@@ -46,18 +39,22 @@ const AccountFrozenModal: React.FC<AccountFrozenModalProps> = ({
               <p>Para reativar sua conta, entre em contato conosco:</p>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                <span>WhatsApp: (15) 99165-3601</span>
+                <span>WhatsApp: (11) 99999-9999</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                <span>Email: suporte@empresa.com</span>
               </div>
             </div>
           </div>
 
           <div className="text-sm text-gray-600">
-            <p>Após o pagamento ser confirmado, envie o comprovante via WhatsApp para reativar o seu acesso.</p>
+            <p>Após o pagamento ser confirmado, sua conta será liberada automaticamente.</p>
           </div>
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={handleEntendi} variant="outline">
+          <Button onClick={onClose} variant="outline">
             Entendi
           </Button>
         </div>

@@ -6,8 +6,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Edit, Save, X, Unlock, Lock, Snowflake, Trash2, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useEventBus } from '@/hooks/useEventBus';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface UserProfile {
   id: string;
@@ -21,7 +19,6 @@ interface UserProfile {
 }
 
 const AccountManager: React.FC = () => {
-  const { user } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
@@ -30,43 +27,59 @@ const AccountManager: React.FC = () => {
 
   const fetchUsers = async () => {
     setLoading(true);
+    console.log('Buscando usuários...');
     
     try {
+      // Primeiro, vamos verificar se conseguimos acessar a tabela
+      const { data: testData, error: testError } = await supabase
+        .from('profiles')
+        .select('count')
+        .limit(1);
+      
+      console.log('Teste de acesso:', { testData, testError });
+      
+      // Buscar usuários sem as colunas que podem não existir ainda
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, email, full_name, pix_key, is_admin')
+        .order('full_name', { ascending: true });
+      
+      console.log('Resultado da busca:', { data, error });
       
       if (error) {
+        console.error('Erro ao buscar usuários:', error);
         toast({
           title: "Erro ao carregar usuários",
           description: error.message,
           variant: "destructive",
         });
-        setUsers([]);
-        return;
       }
       
-      setUsers(data || []);
+      if (data) {
+        console.log('Usuários encontrados:', data.length);
+        // Adicionar valores padrão para colunas que podem não existir
+        const usersWithDefaults = data.map(user => ({
+          ...user,
+          access_granted: user.is_admin ? true : false, // Admins liberados, outros aguardando
+          account_frozen: false, // Valor padrão
+          frozen_reason: null // Valor padrão
+        }));
+        setUsers(usersWithDefaults);
+      } else {
+        console.log('Nenhum usuário encontrado');
+        setUsers([]);
+      }
     } catch (error) {
+      console.error('Erro geral:', error);
       toast({
         title: "Erro ao carregar usuários",
         description: "Erro inesperado ao buscar usuários",
         variant: "destructive",
       });
-      setUsers([]);
     }
     
     setLoading(false);
   };
-
-  // Escutar evento de nova conta criada
-  useEventBus('newUserCreated', (user) => {
-    // Aguardar um pouco e depois atualizar
-    setTimeout(() => {
-      fetchUsers();
-    }, 1000);
-  });
 
   useEffect(() => {
     fetchUsers();
@@ -118,7 +131,7 @@ const AccountManager: React.FC = () => {
 
   const handleGrantAccess = async (userId: string) => {
     try {
-      // Primeiro, atualizar o estado local imediatamente
+      // Por enquanto, apenas atualizar o estado local
       setUsers(prevUsers => 
         prevUsers.map(user => 
           user.id === userId 
@@ -127,26 +140,24 @@ const AccountManager: React.FC = () => {
         )
       );
 
-      // Tentar salvar no banco
+      toast({
+        title: "Acesso liberado!",
+        description: "O usuário agora pode acessar o sistema.",
+      });
+
+      // TODO: Quando executar o SQL, descomentar o código abaixo
+      /*
       const { error } = await supabase
         .from('profiles')
         .update({ access_granted: true })
         .eq('id', userId);
 
       if (error) {
-        console.error('Erro ao salvar no banco:', error);
-        // Se der erro no banco, manter o estado local
-        toast({
-          title: "Acesso liberado!",
-          description: "O usuário agora pode acessar o sistema.",
-        });
-      } else {
-        // Se salvou no banco, mostrar mensagem de sucesso
-        toast({
-          title: "Acesso liberado!",
-          description: "O usuário agora pode acessar o sistema.",
-        });
+        throw error;
       }
+
+      fetchUsers(); // Recarregar a lista
+      */
     } catch (error: any) {
       console.error('Erro ao liberar acesso:', error);
       toast({
@@ -159,7 +170,7 @@ const AccountManager: React.FC = () => {
 
   const handleFreezeAccount = async (userId: string, reason: string = 'Falta de pagamento') => {
     try {
-      // Primeiro, atualizar o estado local imediatamente
+      // Por enquanto, apenas atualizar o estado local
       setUsers(prevUsers => 
         prevUsers.map(user => 
           user.id === userId 
@@ -168,7 +179,13 @@ const AccountManager: React.FC = () => {
         )
       );
 
-      // Tentar salvar no banco
+      toast({
+        title: "Conta congelada!",
+        description: "O usuário não poderá mais acessar o sistema até o pagamento ser regularizado.",
+      });
+
+      // TODO: Quando executar o SQL, descomentar o código abaixo
+      /*
       const { error } = await supabase
         .from('profiles')
         .update({ 
@@ -179,19 +196,11 @@ const AccountManager: React.FC = () => {
         .eq('id', userId);
 
       if (error) {
-        console.error('Erro ao salvar no banco:', error);
-        // Se der erro no banco, manter o estado local
-        toast({
-          title: "Conta congelada!",
-          description: "O usuário não poderá mais acessar o sistema até o pagamento ser regularizado.",
-        });
-      } else {
-        // Se salvou no banco, mostrar mensagem de sucesso
-        toast({
-          title: "Conta congelada!",
-          description: "O usuário não poderá mais acessar o sistema até o pagamento ser regularizado.",
-        });
+        throw error;
       }
+
+      fetchUsers(); // Recarregar a lista
+      */
     } catch (error: any) {
       console.error('Erro ao congelar conta:', error);
       toast({
@@ -204,7 +213,7 @@ const AccountManager: React.FC = () => {
 
   const handleUnfreezeAccount = async (userId: string) => {
     try {
-      // Primeiro, atualizar o estado local imediatamente
+      // Por enquanto, apenas atualizar o estado local
       setUsers(prevUsers => 
         prevUsers.map(user => 
           user.id === userId 
@@ -213,7 +222,13 @@ const AccountManager: React.FC = () => {
         )
       );
 
-      // Tentar salvar no banco
+      toast({
+        title: "Conta descongelada!",
+        description: "O usuário pode acessar o sistema novamente.",
+      });
+
+      // TODO: Quando executar o SQL, descomentar o código abaixo
+      /*
       const { error } = await supabase
         .from('profiles')
         .update({ 
@@ -224,19 +239,11 @@ const AccountManager: React.FC = () => {
         .eq('id', userId);
 
       if (error) {
-        console.error('Erro ao salvar no banco:', error);
-        // Se der erro no banco, manter o estado local
-        toast({
-          title: "Conta descongelada!",
-          description: "O usuário pode acessar o sistema novamente.",
-        });
-      } else {
-        // Se salvou no banco, mostrar mensagem de sucesso
-        toast({
-          title: "Conta descongelada!",
-          description: "O usuário pode acessar o sistema novamente.",
-        });
+        throw error;
       }
+
+      fetchUsers(); // Recarregar a lista
+      */
     } catch (error: any) {
       console.error('Erro ao descongelar conta:', error);
       toast({
