@@ -3,11 +3,6 @@ import React from 'react';
 
 const AccountManager: React.FC = () => {
   // ...outros hooks e estados...
-  // Exemplo:
-  // const [creatingUser, setCreatingUser] = useState(false);
-  // const [newUserData, setNewUserData] = useState({ email: '', password: '', fullName: '', company: '' });
-  // const [showCreateUserModal, setShowCreateUserModal] = useState(false);
-  // const toast = useToast();
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,11 +43,6 @@ const AccountManager: React.FC = () => {
   };
 
   // ...restante do componente (JSX, outros handlers, etc)...
-  return (
-    <div>
-      {/* Seu JSX aqui */}
-    </div>
-  );
 };
 
 export default AccountManager;
