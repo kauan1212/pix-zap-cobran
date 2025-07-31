@@ -47,14 +47,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('🔄 Tentando fazer login para:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('📡 Resposta do login:', { success: !error, error: error?.message });
+
       if (error) {
+        console.error('❌ Erro no login:', error);
+        
         // Se o erro for sobre email não confirmado, tentar fazer login mesmo assim
         if (error.message.includes('Email not confirmed') || error.message.includes('Email não confirmado')) {
+          console.log('📧 Email não confirmado, tentando novamente...');
+          
           toast({
             title: "Email não confirmado",
             description: "Tentando fazer login mesmo assim...",
@@ -68,7 +76,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             password,
           });
           
+          console.log('📡 Resposta da segunda tentativa:', { success: !retryError, error: retryError?.message });
+          
           if (retryError) {
+            console.error('❌ Erro na segunda tentativa:', retryError);
             toast({
               title: "Erro no login",
               description: "Entre em contato com o administrador para liberar sua conta.",
@@ -79,9 +90,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           // Se conseguiu fazer login na segunda tentativa
           if (retryData.user) {
+            console.log('✅ Login bem-sucedido na segunda tentativa, verificando acesso...');
             const accessControl = await checkAccessControl(retryData.user.id);
             
+            console.log('🔐 Controle de acesso:', accessControl);
+            
             if (!accessControl.accessGranted) {
+              console.log('❌ Acesso não autorizado');
               toast({
                 title: "Acesso não autorizado",
                 description: "Sua conta ainda não foi liberada pelo administrador. Entre em contato para regularizar sua situação.",
@@ -92,6 +107,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
 
             if (accessControl.accountFrozen) {
+              console.log('❌ Conta congelada');
               toast({
                 title: "Conta congelada",
                 description: accessControl.frozenReason || "Sua conta foi congelada por falta de pagamento. Entre em contato para regularizar sua situação.",
@@ -101,6 +117,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               return false;
             }
             
+            console.log('✅ Login e acesso autorizado com sucesso!');
             toast({
               title: "Login realizado com sucesso!",
               description: `Bem-vindo de volta!`,
@@ -108,6 +125,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return true;
           }
         } else {
+          console.error('❌ Erro de credenciais:', error.message);
           toast({
             title: "Erro no login",
             description: error.message,
@@ -119,9 +137,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Verificar controle de acesso após login bem-sucedido
       if (data.user) {
+        console.log('✅ Login bem-sucedido, verificando acesso...');
         const accessControl = await checkAccessControl(data.user.id);
         
+        console.log('🔐 Controle de acesso:', accessControl);
+        
         if (!accessControl.accessGranted) {
+          console.log('❌ Acesso não autorizado');
           toast({
             title: "Acesso não autorizado",
             description: "Sua conta ainda não foi liberada pelo administrador. Entre em contato para regularizar sua situação.",
@@ -132,6 +154,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         if (accessControl.accountFrozen) {
+          console.log('❌ Conta congelada');
           toast({
             title: "Conta congelada",
             description: accessControl.frozenReason || "Sua conta foi congelada por falta de pagamento. Entre em contato para regularizar sua situação.",
@@ -142,12 +165,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
 
+      console.log('✅ Login realizado com sucesso!');
       toast({
         title: "Login realizado com sucesso!",
         description: `Bem-vindo de volta!`,
       });
       return true;
     } catch (error) {
+      console.error('❌ Erro inesperado no login:', error);
       toast({
         title: "Erro no login",
         description: "Ocorreu um erro inesperado",
@@ -277,24 +302,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkAccessControl = async (userId: string) => {
     try {
+      console.log('🔍 Verificando controle de acesso para usuário:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('access_granted, account_frozen, frozen_reason')
         .eq('id', userId)
         .single();
 
+      console.log('📡 Resposta da verificação de acesso:', { data, error: error?.message });
+
       if (error) {
-        console.error('Erro ao verificar controle de acesso:', error);
+        console.error('❌ Erro ao verificar controle de acesso:', error);
         return { accessGranted: false, accountFrozen: false };
       }
 
-      return {
+      const result = {
         accessGranted: data?.access_granted ?? false,
         accountFrozen: data?.account_frozen ?? false,
         frozenReason: data?.frozen_reason
       };
+
+      console.log('✅ Resultado do controle de acesso:', result);
+      return result;
     } catch (error) {
-      console.error('Erro ao verificar controle de acesso:', error);
+      console.error('❌ Erro inesperado ao verificar controle de acesso:', error);
       return { accessGranted: false, accountFrozen: false };
     }
   };
