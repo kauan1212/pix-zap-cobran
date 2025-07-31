@@ -35,3 +35,5 @@ const handleCreateUser = async (e: React.FormEvent) => {
     setCreatingUser(false);
   }
 };
+
+export default AccountManager;
