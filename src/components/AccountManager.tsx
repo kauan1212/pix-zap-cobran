@@ -1,39 +1,48 @@
-const handleCreateUser = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setCreatingUser(true);
+import React from 'react';
+// ...outros imports necessários...
 
-  try {
-    const res = await fetch('/api/createUser', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: newUserData.email,
-        password: newUserData.password,
-        full_name: newUserData.fullName,
-        company: newUserData.company
-      })
-    });
+const AccountManager: React.FC = () => {
+  // ...outros hooks e estados...
 
-    const result = await res.json();
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingUser(true);
 
-    if (!res.ok) throw new Error(result.error || 'Erro ao criar usuário');
+    try {
+      const res = await fetch('/api/createUser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newUserData.email,
+          password: newUserData.password,
+          full_name: newUserData.fullName,
+          company: newUserData.company
+        })
+      });
 
-    toast({
-      title: "Conta criada com sucesso!",
-      description: `A conta do usuário ${newUserData.email} foi criada. O usuário pode fazer login após ser aprovado.`,
-    });
+      const result = await res.json();
 
-    setShowCreateUserModal(false);
-    // ...restante do seu código
-  } catch (err: any) {
-    toast({
-      title: "Erro ao criar usuário",
-      description: err.message,
-      variant: "destructive",
-    });
-  } finally {
-    setCreatingUser(false);
-  }
+      if (!res.ok) throw new Error(result.error || 'Erro ao criar usuário');
+
+      toast({
+        title: "Conta criada com sucesso!",
+        description: `A conta do usuário ${newUserData.email} foi criada. O usuário pode fazer login após ser aprovado.`,
+      });
+
+      setShowCreateUserModal(false);
+      // ...restante do seu código
+    } catch (err: any) {
+      toast({
+        title: "Erro ao criar usuário",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
+  // ...restante do componente (JSX, outros handlers, etc)...
 };
 
 export default AccountManager;
