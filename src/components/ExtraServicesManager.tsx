@@ -116,9 +116,26 @@ const ExtraServicesManager: React.FC<ExtraServicesManagerProps> = ({ clients }) 
               <Card><CardContent className="text-center py-8 text-gray-500">Nenhum serviço extra cadastrado</CardContent></Card>
             ) : (
               extraServices.map((service) => (
-                <Card key={service.id} className="hover:shadow-lg transition-shadow duration-200">
+                <Card key={service.id} className="hover:shadow-lg transition-shadow duration-200 relative">
+                  <button
+                    onClick={async () => {
+                      if (window.confirm('Tem certeza que deseja deletar este serviço extra?')) {
+                        const { error } = await supabase.from('extra_services').delete().eq('id', service.id);
+                        if (error) {
+                          toast({ title: "Erro ao deletar serviço", description: error.message, variant: "destructive" });
+                        } else {
+                          toast({ title: "Serviço extra deletado!" });
+                          loadExtraServices();
+                        }
+                      }
+                    }}
+                    className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1 transition-colors"
+                    title="Deletar serviço extra"
+                  >
+                    ✕
+                  </button>
                   <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start pr-8">
                       <div>
                         <CardTitle className="text-lg">{service.description}</CardTitle>
                         <CardDescription className="text-sm text-gray-600 mt-1">R$ {service.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</CardDescription>

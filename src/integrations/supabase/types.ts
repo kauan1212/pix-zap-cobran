@@ -309,21 +309,21 @@ export type Database = {
       client_access_tokens: {
         Row: {
           client_id: string
-          created_at: string
+          created_at: string | null
           expires_at: string
           id: string
           token: string
         }
         Insert: {
           client_id: string
-          created_at?: string
-          expires_at?: string
+          created_at?: string | null
+          expires_at: string
           id?: string
           token: string
         }
         Update: {
           client_id?: string
-          created_at?: string
+          created_at?: string | null
           expires_at?: string
           id?: string
           token?: string
@@ -403,6 +403,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      extra_services: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string | null
+          description: string
+          id: string
+          paid_at: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string | null
+          description: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extra_services_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       matches: {
         Row: {
@@ -575,45 +613,83 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_granted: boolean | null
+          account_frozen: boolean | null
+          company: string | null
           created_at: string | null
           email: string | null
+          frozen_reason: string | null
           full_name: string | null
-          company: string | null
           id: string
           is_admin: boolean | null
           pix_key: string | null
           updated_at: string | null
-          access_granted: boolean | null
-          account_frozen: boolean | null
-          frozen_reason: string | null
         }
         Insert: {
+          access_granted?: boolean | null
+          account_frozen?: boolean | null
+          company?: string | null
           created_at?: string | null
           email?: string | null
+          frozen_reason?: string | null
           full_name?: string | null
-          company?: string | null
           id: string
           is_admin?: boolean | null
           pix_key?: string | null
           updated_at?: string | null
-          access_granted?: boolean | null
-          account_frozen?: boolean | null
-          frozen_reason?: string | null
         }
         Update: {
+          access_granted?: boolean | null
+          account_frozen?: boolean | null
+          company?: string | null
           created_at?: string | null
           email?: string | null
+          frozen_reason?: string | null
           full_name?: string | null
-          company?: string | null
           id?: string
           is_admin?: boolean | null
           pix_key?: string | null
           updated_at?: string | null
-          access_granted?: boolean | null
-          account_frozen?: boolean | null
-          frozen_reason?: string | null
         }
         Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          client_id: string | null
+          created_at: string | null
+          endpoint: string
+          id: string
+          is_admin: boolean | null
+          p256dh: string
+        }
+        Insert: {
+          auth: string
+          client_id?: string | null
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          is_admin?: boolean | null
+          p256dh: string
+        }
+        Update: {
+          auth?: string
+          client_id?: string | null
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          is_admin?: boolean | null
+          p256dh?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recurring_plans: {
         Row: {
@@ -901,6 +977,125 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_expenses: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string
+          expense_date: string
+          id: string
+          service_type: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description: string
+          expense_date: string
+          id?: string
+          service_type?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string
+          expense_date?: string
+          id?: string
+          service_type?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_expenses_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_revenues: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          payment_date: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          payment_date: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          payment_date?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_revenues_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_revenues_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          acquisition_cost: number
+          acquisition_date: string
+          created_at: string | null
+          id: string
+          model: string
+          plate: string
+          updated_at: string | null
+          user_id: string | null
+          year: number
+        }
+        Insert: {
+          acquisition_cost: number
+          acquisition_date: string
+          created_at?: string | null
+          id?: string
+          model: string
+          plate: string
+          updated_at?: string | null
+          user_id?: string | null
+          year: number
+        }
+        Update: {
+          acquisition_cost?: number
+          acquisition_date?: string
+          created_at?: string | null
+          id?: string
+          model?: string
+          plate?: string
+          updated_at?: string | null
+          user_id?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       vigilantes: {
         Row: {
           condominium_id: string | null
@@ -999,52 +1194,57 @@ export type Database = {
         }
         Relationships: []
       }
-      extra_services: {
-        Row: {
-          id: string;
-          client_id: string;
-          description: string;
-          amount: number;
-          status: string;
-          created_at: string;
-          paid_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          client_id: string;
-          description: string;
-          amount: number;
-          status?: string;
-          created_at?: string;
-          paid_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          client_id?: string;
-          description?: string;
-          amount?: number;
-          status?: string;
-          created_at?: string;
-          paid_at?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "extra_services_client_id_fkey";
-            columns: ["client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["id"];
-          }
-        ];
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      create_user_with_profile: {
+        Args: {
+          user_email: string
+          user_password: string
+          user_full_name: string
+          user_company: string
+        }
+        Returns: Json
+      }
+      delete_user_complete: {
+        Args: { user_email: string }
+        Returns: string
+      }
       generate_client_token: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_all_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string
+          full_name: string
+          pix_key: string
+          is_admin: boolean
+          access_granted: boolean
+          account_frozen: boolean
+          frozen_reason: string
+          created_at: string
+          updated_at: string
+        }[]
+      }
+      get_all_profiles_simple: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string
+          full_name: string
+          pix_key: string
+          is_admin: boolean
+          access_granted: boolean
+          account_frozen: boolean
+          frozen_reason: string
+          created_at: string
+          updated_at: string
+        }[]
       }
       has_role: {
         Args: {

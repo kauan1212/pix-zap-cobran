@@ -488,6 +488,20 @@ Equipe Financeira`;
                       // Valor com juros se aplicável
                       const showInterest = billing.interest === 10 && isOverdue;
                       const amountWithInterest = showInterest ? billing.amount * 1.1 : billing.amount;
+                      
+                      // Função para deletar cobrança
+                      const handleDeleteBilling = async () => {
+                        if (window.confirm('Tem certeza que deseja deletar esta cobrança?')) {
+                          const { error } = await supabase.from('billings').delete().eq('id', billing.id);
+                          if (error) {
+                            toast({ title: "Erro ao deletar cobrança", description: error.message, variant: "destructive" });
+                          } else {
+                            toast({ title: "Cobrança deletada!" });
+                            loadBillings();
+                            onDataChange();
+                          }
+                        }
+                      };
 
                       // Função para alternar juros
                       const handleToggleInterest = async (checked: boolean) => {
@@ -503,25 +517,32 @@ Equipe Financeira`;
                         }
                       };
 
-                      return (
-                        <Card key={billing.id} className="hover:shadow-lg transition-shadow duration-200">
-                          <CardHeader>
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <CardTitle className="text-lg">{billing.description}</CardTitle>
-                                <CardDescription className="text-sm text-gray-600 mt-1">
-                                  {billing.description}
-                                </CardDescription>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-xl font-bold text-gray-900">
-                                  R$ {amountWithInterest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                  {showInterest && <span className="text-xs text-red-600 ml-1">(com juros)</span>}
-                                </p>
-                                <Badge className={`text-xs ${getStatusColor(billing.status)}`}>{getStatusText(billing.status)}</Badge>
-                              </div>
-                            </div>
-                          </CardHeader>
+                       return (
+                         <Card key={billing.id} className="hover:shadow-lg transition-shadow duration-200 relative">
+                           <button
+                             onClick={handleDeleteBilling}
+                             className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1 transition-colors z-10"
+                             title="Deletar cobrança"
+                           >
+                             ✕
+                           </button>
+                           <CardHeader>
+                             <div className="flex justify-between items-start pr-8">
+                               <div>
+                                 <CardTitle className="text-lg">{billing.description}</CardTitle>
+                                 <CardDescription className="text-sm text-gray-600 mt-1">
+                                   {billing.description}
+                                 </CardDescription>
+                               </div>
+                               <div className="text-right">
+                                 <p className="text-xl font-bold text-gray-900">
+                                   R$ {amountWithInterest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                   {showInterest && <span className="text-xs text-red-600 ml-1">(com juros)</span>}
+                                 </p>
+                                 <Badge className={`text-xs ${getStatusColor(billing.status)}`}>{getStatusText(billing.status)}</Badge>
+                               </div>
+                             </div>
+                           </CardHeader>
                           <CardContent>
                             <div className="flex items-center justify-between mb-4">
                               <div className="flex items-center space-x-4 text-sm text-gray-600">

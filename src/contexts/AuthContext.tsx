@@ -10,7 +10,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string, company: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  checkAccessControl: (userId: string) => Promise<{ accessGranted: boolean; accountFrozen: boolean; frozenReason?: string }>;
+  checkAccessControl: (userId: string) => Promise<{ accessGranted: boolean; accountFrozen: boolean; frozenReason?: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               console.log('❌ Conta congelada');
               toast({
                 title: "Conta congelada",
-                description: accessControl.frozenReason || "Sua conta foi congelada por falta de pagamento. Entre em contato para regularizar sua situação.",
+                description: (accessControl as any).frozenReason || "Sua conta foi congelada por falta de pagamento. Entre em contato para regularizar sua situação.",
                 variant: "destructive",
               });
               await supabase.auth.signOut();
@@ -157,7 +157,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.log('❌ Conta congelada');
           toast({
             title: "Conta congelada",
-            description: accessControl.frozenReason || "Sua conta foi congelada por falta de pagamento. Entre em contato para regularizar sua situação.",
+            description: (accessControl as any).frozenReason || "Sua conta foi congelada por falta de pagamento. Entre em contato para regularizar sua situação.",
             variant: "destructive",
           });
           await supabase.auth.signOut();
@@ -320,7 +320,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const result = {
         accessGranted: data?.access_granted ?? false,
         accountFrozen: data?.account_frozen ?? false,
-        frozenReason: data?.frozen_reason
+        frozenReason: data?.frozen_reason || null
       };
 
       console.log('✅ Resultado do controle de acesso:', result);
