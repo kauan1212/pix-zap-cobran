@@ -42,39 +42,35 @@ const ClientPortal = () => {
   useEffect(() => {
     if (token) {
       loadClientData();
-      loadPixKey();
     }
   }, [token]);
 
   useEffect(() => {
     if (client) {
       loadExtraServices();
+      loadPixKey(); // Carrega a chave PIX após o cliente estar disponível
     }
   }, [client]);
 
   const loadPixKey = async () => {
     try {
-      // Buscar a chave PIX através de uma billing existente
-      const { data: billingData, error: billingError } = await supabase
-        .from('billings')
-        .select('user_id')
-        .limit(1)
+      if (!client?.user_id) {
+        console.error('Client user_id not available');
+        setPixKey('15991653601');
+        return;
+      }
+
+      // Buscar a chave PIX diretamente do usuário deste cliente
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('pix_key')
+        .eq('id', client.user_id)
         .single();
 
-      if (!billingError && billingData?.user_id) {
-        // Agora buscar a chave PIX do usuário
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('pix_key')
-          .eq('id', billingData.user_id)
-          .single();
-
-        if (!profileError && profileData?.pix_key) {
-          setPixKey(profileData.pix_key);
-        } else {
-          setPixKey('15991653601');
-        }
+      if (!profileError && profileData?.pix_key) {
+        setPixKey(profileData.pix_key);
       } else {
+        console.error('Error loading PIX key or PIX key not found:', profileError);
         setPixKey('15991653601');
       }
     } catch (error) {
