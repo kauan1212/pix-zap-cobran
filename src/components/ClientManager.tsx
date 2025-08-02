@@ -172,6 +172,43 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
     setIsEditDialogOpen(true);
   };
 
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !editingClient) return;
+
+    const { error } = await supabase
+      .from('clients')
+      .update({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        cpf_cnpj: formData.cpf_cnpj,
+        address: formData.address,
+      })
+      .eq('id', editingClient.id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar cliente",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Cliente atualizado!",
+      description: "As informações do cliente foram atualizadas com sucesso.",
+    });
+    
+    setIsEditDialogOpen(false);
+    setEditingClient(null);
+    resetForm();
+    loadClients();
+    onDataChange();
+  };
+
   const handleDelete = async (clientId: string, clientName: string) => {
     if (!confirm(`Tem certeza que deseja excluir o cliente ${clientName}? Esta ação não pode ser desfeita.`)) {
       return;
@@ -341,7 +378,72 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
             </form>
           </DialogContent>
         </Dialog>
-        {/* Dialog de Edição igual ao anterior */}
+        
+        {/* Dialog de Edição */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Editar Cliente</DialogTitle>
+              <DialogDescription>
+                Edite as informações do cliente
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Nome completo *</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-email">E-mail</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-phone">Telefone (WhatsApp)</Label>
+                <Input
+                  id="edit-phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-cpf_cnpj">CPF/CNPJ</Label>
+                <Input
+                  id="edit-cpf_cnpj"
+                  value={formData.cpf_cnpj}
+                  onChange={(e) => setFormData({...formData, cpf_cnpj: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-address">Endereço</Label>
+                <Textarea
+                  id="edit-address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  placeholder="Endereço completo (opcional)"
+                />
+              </div>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  Salvar Alterações
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {loading ? (
