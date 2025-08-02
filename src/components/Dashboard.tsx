@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Users, Receipt, Settings, Clock, Key, UserCog } from 'lucide-react';
+import { LogOut, Users, Receipt, Settings, Clock, Key, UserCog, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ClientManager from './ClientManager';
 import BillingManager from './BillingManager';
@@ -14,6 +14,7 @@ import MobileLayout from './MobileLayout';
 import ExtraServicesManager from './ExtraServicesManager';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AccountManager from './AccountManager';
+import PaymentAlertsModal from './PaymentAlertsModal';
 
 interface Client {
   id: string;
@@ -22,10 +23,24 @@ interface Client {
   phone: string;
 }
 
+interface PaymentAlert {
+  client_id: string;
+  client_name: string;
+  client_phone: string;
+  billing_id: string;
+  amount: number;
+  description: string;
+  due_date: string;
+  days_overdue: number;
+  status: 'due_today' | 'overdue';
+}
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('clients');
   const [clients, setClients] = useState<Client[]>([]);
+  const [alerts, setAlerts] = useState<PaymentAlert[]>([]);
+  const [showAlertsModal, setShowAlertsModal] = useState(false);
   const { profile } = useUserProfile();
 
 
@@ -34,8 +49,75 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       loadClients();
+      loadPaymentAlerts();
     }
   }, [user]);
+
+  const loadPaymentAlerts = async () => {
+    if (!user) return;
+
+    try {
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Buscar cobranças pendentes com dados do cliente
+      const { data: billingsData, error } = await supabase
+        .from('billings')
+        .select(`
+          id,
+          amount,
+          description,
+          due_date,
+          client_id,
+          clients!inner (
+            id,
+            name,
+            phone
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .lte('due_date', todayStr)
+        .order('due_date', { ascending: true });
+
+      if (error) {
+        console.error('Error loading payment alerts:', error);
+        return;
+      }
+
+      if (!billingsData || billingsData.length === 0) {
+        setAlerts([]);
+        return;
+      }
+
+      const paymentAlerts: PaymentAlert[] = billingsData.map((billing: any) => {
+        const dueDate = new Date(billing.due_date);
+        const diffTime = today.getTime() - dueDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        return {
+          client_id: billing.client_id,
+          client_name: billing.clients.name,
+          client_phone: billing.clients.phone || '',
+          billing_id: billing.id,
+          amount: billing.amount,
+          description: billing.description,
+          due_date: billing.due_date,
+          days_overdue: diffDays > 0 ? diffDays : 0,
+          status: diffDays > 0 ? 'overdue' : 'due_today'
+        };
+      });
+
+      setAlerts(paymentAlerts);
+      
+      // Mostrar modal automaticamente se houver alertas
+      if (paymentAlerts.length > 0) {
+        setShowAlertsModal(true);
+      }
+    } catch (error) {
+      console.error('Error loading payment alerts:', error);
+    }
+  };
 
   const loadClients = async () => {
     if (!user) return;
@@ -55,6 +137,7 @@ const Dashboard = () => {
 
   const handleDataChange = () => {
     loadClients();
+    loadPaymentAlerts(); // Recarregar alertas quando dados mudarem
   };
 
   const handleLogout = async () => {
@@ -78,6 +161,13 @@ const Dashboard = () => {
 
   return (
     <MobileLayout>
+      {/* Modal de Alertas de Pagamento */}
+      <PaymentAlertsModal
+        isOpen={showAlertsModal}
+        onClose={() => setShowAlertsModal(false)}
+        alerts={alerts}
+      />
+
       {/* Header */}
       <header className="bg-background border-b border-border mb-6">
         <div className="flex justify-between items-center h-16 px-4 sm:px-0">
@@ -95,6 +185,20 @@ const Dashboard = () => {
           </div>
           
           <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Botão para mostrar alertas */}
+            {alerts.length > 0 && (
+              <Button
+                onClick={() => setShowAlertsModal(true)}
+                variant="outline"
+                size="sm"
+                className="text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <AlertTriangle className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">{alerts.length} Alerta(s)</span>
+                <span className="sm:hidden">{alerts.length}</span>
+              </Button>
+            )}
+            
             <span className="text-muted-foreground text-sm">
               {profile?.full_name || user?.email}
             </span>
