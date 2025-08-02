@@ -230,7 +230,8 @@ const AccountManager: React.FC = () => {
           title: 'Usuário deletado com sucesso!',
           description: `${user.full_name} foi removido completamente do sistema.`
         });
-        fetchUsers();
+        // Atualizar a lista removendo o usuário deletado imediatamente
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== user.id));
       }
     } catch (err: any) {
       toast({ 
