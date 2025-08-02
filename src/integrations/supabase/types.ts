@@ -1222,6 +1222,7 @@ export type Database = {
           id: string
           email: string
           full_name: string
+          company: string
           pix_key: string
           is_admin: boolean
           access_granted: boolean
