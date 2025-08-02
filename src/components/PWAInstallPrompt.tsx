@@ -42,13 +42,29 @@ const PWAInstallPrompt: React.FC = () => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      // Show prompt after 3 seconds if user hasn't interacted
+      // Show prompt after 2 seconds if user hasn't interacted (reduced from 3s)
       setTimeout(() => {
         if (!hasInteracted && !standalone) {
           setShowInstallDialog(true);
         }
-      }, 3000);
+      }, 2000);
     };
+
+    // For browsers that don't support beforeinstallprompt, show after page load
+    if (!standalone && !iOS) {
+      setTimeout(() => {
+        if (!hasInteracted && !deferredPrompt) {
+          setShowInstallDialog(true);
+        }
+      }, 5000);
+    }
+
+    // For iOS, show install tip more aggressively
+    if (iOS && !standalone) {
+      setTimeout(() => {
+        setShowInstallDialog(true);
+      }, 3000);
+    }
 
     // Detect user interaction
     const handleUserInteraction = () => {
@@ -100,10 +116,10 @@ const PWAInstallPrompt: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Smartphone className="h-5 w-5 text-primary" />
-              Instalar Minhas finanças - Moto
+              Instalar Controle Financeiro - Moto
             </DialogTitle>
             <DialogDescription>
-              Instale o Minhas finanças - Moto na sua tela inicial para acesso rápido e melhor experiência.
+              Instale o Controle Financeiro - Moto na sua tela inicial para acesso rápido e melhor experiência.
             </DialogDescription>
           </DialogHeader>
           
@@ -143,10 +159,10 @@ const PWAInstallPrompt: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Download className="h-5 w-5 text-primary" />
-              Instalar LocAuto
+              Instalar Controle Financeiro - Moto
             </DialogTitle>
             <DialogDescription>
-              Instale o LocAuto como um aplicativo para acesso rápido e melhor experiência.
+              Instale o Controle Financeiro - Moto como um aplicativo para acesso rápido e melhor experiência.
             </DialogDescription>
           </DialogHeader>
           
