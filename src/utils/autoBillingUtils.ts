@@ -3,9 +3,13 @@ import { AutoBillingPlan } from '@/types/autoBilling';
 
 export const generateBillingsForPlan = (plan: AutoBillingPlan, userId: string) => {
   const billings = [];
-  // Criar datas em timezone local para evitar problemas de offset
-  const startDate = new Date(plan.start_date + 'T00:00:00');
-  const endDate = new Date(plan.end_date + 'T23:59:59');
+  
+  // Criar datas corretamente no timezone local sem problemas de offset
+  const [startYear, startMonth, startDay] = plan.start_date.split('-').map(Number);
+  const [endYear, endMonth, endDay] = plan.end_date.split('-').map(Number);
+  
+  const startDate = new Date(startYear, startMonth - 1, startDay); // month é 0-indexed
+  const endDate = new Date(endYear, endMonth - 1, endDay);
   let currentDate = new Date(startDate);
 
   // Validate dates
@@ -19,12 +23,18 @@ export const generateBillingsForPlan = (plan: AutoBillingPlan, userId: string) =
   const maxIterations = 1000; // Limit to prevent infinite loops
 
   while (currentDate <= endDate && iterations < maxIterations) {
+    // Formatar a data corretamente no formato YYYY-MM-DD
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    const dueDate = `${year}-${month}-${day}`;
+    
     billings.push({
       user_id: userId,
       client_id: plan.client_id,
       amount: plan.amount,
       description: plan.description,
-      due_date: `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`,
+      due_date: dueDate,
       auto_billing_plan_id: plan.id,
       status: 'pending'
     });
