@@ -16,12 +16,21 @@ import { supabase } from "./integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
+function isIos() {
+  return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+}
+function isInStandaloneMode() {
+  // @ts-ignore
+  return ('standalone' in window.navigator) && (window.navigator.standalone);
+}
+
 const App = () => {
   const { isUpdateAvailable, update } = useServiceWorkerUpdate();
   const { user } = useAuth();
   const [showFrozenModal, setShowFrozenModal] = useState(false);
   const [showAccessDeniedModal, setShowAccessDeniedModal] = useState(false);
   const [frozenReason, setFrozenReason] = useState('');
+  const [showIosInstallTip, setShowIosInstallTip] = useState(false);
 
   useEffect(() => {
     // Register service worker for PWA functionality
@@ -41,6 +50,11 @@ const App = () => {
     const viewport = document.querySelector('meta[name=viewport]');
     if (viewport) {
       viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+    }
+
+    // Dica de instalação para iOS
+    if (isIos() && !isInStandaloneMode()) {
+      setShowIosInstallTip(true);
     }
   }, []);
 
@@ -91,6 +105,11 @@ const App = () => {
           </Routes>
         </BrowserRouter>
         <PWAInstallPrompt />
+        {showIosInstallTip && (
+          <div style={{padding: 16, background: "#1976d2", color: "#fff", textAlign: "center", position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1000}}>
+            Para instalar este app no iPhone/iPad, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.
+          </div>
+        )}
         
         {/* Modais de controle de acesso */}
         <AccountFrozenModal 

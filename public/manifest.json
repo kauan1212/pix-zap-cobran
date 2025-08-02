@@ -1,12 +1,12 @@
 {
-  "name": "Minhas finanças - Moto",
-  "short_name": "Finanças Moto",
+  "name": "Controle Financeiro Moto",
+  "short_name": "CF Moto",
   "description": "Gestão de finanças e cobranças para aluguel de motos.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#0099cc",
+  "background_color": "#f5f3ee",
+  "theme_color": "#1976d2",
   "orientation": "portrait-primary",
   "categories": ["business", "finance", "productivity"],
   "lang": "pt-BR",
@@ -28,12 +28,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "/favicon.png",
-      "sizes": "32x32",
-      "type": "image/png",
-      "purpose": "any"
     }
   ],
   "shortcuts": [
