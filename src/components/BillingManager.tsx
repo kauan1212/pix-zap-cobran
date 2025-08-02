@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ReceiptUpload from '@/components/ReceiptUpload';
 import { Switch } from '@/components/ui/switch';
+import { formatDateSafely } from '@/utils/dateUtils';
 
 interface Client {
   id: string;
@@ -180,7 +181,7 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
     const client = billing.clients;
     if (!client) return '';
 
-    const dueDate = new Date(billing.due_date).toLocaleDateString('pt-BR');
+    const dueDate = formatDateSafely(billing.due_date);
     const amount = billing.amount.toLocaleString('pt-BR', { 
       style: 'currency', 
       currency: 'BRL' 
@@ -226,7 +227,7 @@ Obrigado!`;
     const client = billing.clients;
     if (!client) return '';
 
-    const dueDate = new Date(billing.due_date).toLocaleDateString('pt-BR');
+    const dueDate = formatDateSafely(billing.due_date);
     const amount = billing.amount.toLocaleString('pt-BR', { 
       style: 'currency', 
       currency: 'BRL' 
@@ -285,7 +286,7 @@ Equipe Financeira`;
     const client = billing.clients;
     if (!client) return '';
 
-    const dueDate = new Date(billing.due_date).toLocaleDateString('pt-BR');
+    const dueDate = formatDateSafely(billing.due_date);
     const amount = billing.amount.toLocaleString('pt-BR', { 
       style: 'currency', 
       currency: 'BRL' 
@@ -383,7 +384,7 @@ Equipe Financeira`;
   const generatePreDueMessage = (billing: Billing) => {
     const client = billing.clients;
     if (!client) return '';
-    const dueDate = new Date(billing.due_date).toLocaleDateString('pt-BR');
+    const dueDate = formatDateSafely(billing.due_date);
     const amount = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     let message = `Prezado(a) ${client.name},\n\nLembramos que a parcela referente a ${billing.description} vence em breve (${dueDate}).\n\n📋 Detalhes da cobrança:\n• Valor: ${amount}\n• Vencimento: ${dueDate}\n• Descrição: ${billing.description}\n\n💳 Para realizar o pagamento via PIX, utilize a chave:\n${userPixKey}\n\nEvite juros e multas realizando o pagamento até a data de vencimento.\n\nApós o pagamento, envie o comprovante para confirmação.\n\nAgradecemos a atenção.\n\nAtenciosamente,\nEquipe Financeira`;
     return message;
@@ -548,7 +549,7 @@ Equipe Financeira`;
                               <div className="flex items-center space-x-4 text-sm text-gray-600">
                                 <div className="flex items-center space-x-1">
                                   <Calendar className="w-4 h-4" />
-                                  <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
+                                   <span>Vencimento: {formatDateSafely(billing.due_date)}</span>
                                 </div>
                                 {billing.penalty && (
                                   <div className="flex items-center space-x-1">
@@ -663,7 +664,7 @@ Equipe Financeira`;
                           <div className="flex items-center space-x-4 text-sm text-gray-600">
                             <div className="flex items-center space-x-1">
                               <Calendar className="w-4 h-4" />
-                              <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
+                               <span>Vencimento: {formatDateSafely(billing.due_date)}</span>
                             </div>
                             {billing.penalty && (
                               <div className="flex items-center space-x-1">
@@ -763,7 +764,7 @@ Equipe Financeira`;
                               <div className="flex items-center space-x-4 text-sm text-gray-600">
                                 <div className="flex items-center space-x-1">
                                   <Calendar className="w-4 h-4" />
-                                  <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
+                                  <span>Vencimento: {formatDateSafely(billing.due_date)}</span>
                                 </div>
                                 {billing.penalty && (
                                   <div className="flex items-center space-x-1">

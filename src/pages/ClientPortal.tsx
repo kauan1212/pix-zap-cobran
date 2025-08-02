@@ -8,6 +8,7 @@ import { Calendar, DollarSign, Copy, AlertCircle, CheckCircle2, FileText } from 
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { MotivationalPayments } from "../components/MotivationalPayments";
+import { formatDateSafely } from '@/utils/dateUtils';
 
 interface Client {
   id: string;
@@ -360,7 +361,7 @@ const ClientPortal = () => {
                           <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Calendar className="w-4 h-4" />
-                              <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
+                              <span>Vencimento: {formatDateSafely(billing.due_date)}</span>
                             </div>
                             {billing.penalty && billing.penalty > 0 && (
                               <span className="text-red-600">Multa: R$ {billing.penalty.toFixed(2)}</span>
@@ -406,7 +407,7 @@ const ClientPortal = () => {
                         <Button
                           className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white"
                           onClick={() => {
-                            const data = new Date(billing.due_date).toLocaleDateString('pt-BR');
+                            const data = formatDateSafely(billing.due_date);
                             const valor = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                             const texto = `Olá! Já realizei o pagamento referente ao vencimento do dia ${data}, parcela ${billing.description}, no valor de ${valor}.`;
                             const url = `https://wa.me/${client?.phone ? client.phone.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
@@ -421,7 +422,7 @@ const ClientPortal = () => {
                         id: billing.id,
                         name: billing.description,
                         value: billing.amount,
-                        dueDate: new Date(billing.due_date).toLocaleDateString('pt-BR'),
+                        dueDate: formatDateSafely(billing.due_date),
                       }]} phraseIndex={idx} />
                     </CardContent>
                   </Card>
@@ -449,12 +450,12 @@ const ClientPortal = () => {
                           <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Calendar className="w-4 h-4" />
-                              <span>Vencimento: {new Date(billing.due_date).toLocaleDateString('pt-BR')}</span>
+                              <span>Vencimento: {formatDateSafely(billing.due_date)}</span>
                             </div>
                             {billing.payment_date && (
                               <div className="flex items-center space-x-1 text-green-600">
                                 <CheckCircle2 className="w-4 h-4" />
-                                <span>Pago em: {new Date(billing.payment_date).toLocaleDateString('pt-BR')}</span>
+                                <span>Pago em: {formatDateSafely(billing.payment_date)}</span>
                               </div>
                             )}
                           </div>
@@ -488,7 +489,7 @@ const ClientPortal = () => {
                             if (hora >= 5 && hora < 12) saudacao = "Bom dia";
                             else if (hora >= 12 && hora < 18) saudacao = "Boa tarde";
                             else saudacao = "Boa noite";
-                            const data = new Date(billing.due_date).toLocaleDateString('pt-BR');
+                            const data = formatDateSafely(billing.due_date);
                             const valor = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                             const texto = `${saudacao}! Já realizei o pagamento referente do dia: *${data}*\nParcela *${billing.description}*\nValor de *${valor}*.\nSegue o comprovante!`;
                             const url = `https://wa.me/${client?.phone ? client.phone.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
@@ -567,7 +568,7 @@ const ClientPortal = () => {
                         </>
                       )}
                       {service.status === 'pago' && service.paid_at && (
-                        <div className="text-green-700 font-semibold">Pago em {new Date(service.paid_at).toLocaleDateString('pt-BR')}</div>
+                        <div className="text-green-700 font-semibold">Pago em {formatDateSafely(service.paid_at)}</div>
                       )}
                     </CardContent>
                   </Card>
