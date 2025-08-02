@@ -82,11 +82,15 @@ const Dashboard = () => {
       <header className="bg-background border-b border-border mb-6">
         <div className="flex justify-between items-center h-16 px-4 sm:px-0">
           <div className="flex items-center space-x-2 sm:space-x-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">L</span>
+            <div className="w-10 h-10 flex items-center justify-center">
+              <img 
+                src="/lovable-uploads/9b963c8e-408f-4bca-9525-1cb3722571a0.png" 
+                alt="Controle Financeiro - Moto" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="font-bold text-lg sm:text-xl text-foreground">
-              {profile?.company || 'Minhas finanças'}
+              {profile?.company || 'Controle Financeiro - Moto'}
             </span>
           </div>
           
