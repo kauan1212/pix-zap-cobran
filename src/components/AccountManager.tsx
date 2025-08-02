@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { UserPlus, Shield, Lock, Unlock, Snowflake, Sun, Trash2, Loader2 } from 'lucide-react';
+import { UserPlus, Shield, Lock, Unlock, Edit, Trash2, Loader2 } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -36,6 +36,15 @@ const AccountManager: React.FC = () => {
     full_name: '',
     email: '',
     password: '',
+    company: ''
+  });
+
+  // Estados para editar usuário
+  const [showEdit, setShowEdit] = useState(false);
+  const [editUser, setEditUser] = useState<UserProfile | null>(null);
+  const [editForm, setEditForm] = useState({
+    full_name: '',
+    email: '',
     company: ''
   });
 
@@ -145,34 +154,56 @@ const AccountManager: React.FC = () => {
     setActionLoading(null);
   };
 
-  // Congelar/descongelar conta
-  const handleToggleFrozen = async (user: UserProfile) => {
-    setActionLoading(`frozen-${user.id}`);
+  // Editar usuário
+  const handleEditUser = (user: UserProfile) => {
+    setEditUser(user);
+    setEditForm({
+      full_name: user.full_name,
+      email: user.email,
+      company: user.company || ''
+    });
+    setShowEdit(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUser || !editForm.full_name || !editForm.email) {
+      toast({ 
+        title: 'Preencha todos os campos obrigatórios', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    setActionLoading(`edit-${editUser.id}`);
     try {
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          account_frozen: !user.account_frozen,
-          frozen_reason: !user.account_frozen ? 'Conta congelada pelo administrador' : null
+          full_name: editForm.full_name,
+          email: editForm.email,
+          company: editForm.company || null
         })
-        .eq('id', user.id);
+        .eq('id', editUser.id);
       
       if (error) {
         toast({ 
-          title: 'Erro ao atualizar status', 
+          title: 'Erro ao editar usuário', 
           description: error.message, 
           variant: 'destructive' 
         });
       } else {
         toast({ 
-          title: user.account_frozen ? 'Conta descongelada' : 'Conta congelada',
-          description: `A conta de ${user.full_name} foi ${user.account_frozen ? 'descongelada' : 'congelada'}.`
+          title: 'Usuário editado com sucesso!',
+          description: `Os dados de ${editForm.full_name} foram atualizados.`
         });
+        setShowEdit(false);
+        setEditUser(null);
         fetchUsers();
       }
     } catch (err: any) {
       toast({ 
-        title: 'Erro ao atualizar status', 
+        title: 'Erro ao editar usuário', 
         description: err.message, 
         variant: 'destructive' 
       });
@@ -313,7 +344,7 @@ const AccountManager: React.FC = () => {
                       <th className="text-left p-4 font-medium">Email</th>
                       <th className="text-center p-4 font-medium">Admin</th>
                       <th className="text-center p-4 font-medium">Acesso</th>
-                      <th className="text-center p-4 font-medium">Status</th>
+                      <th className="text-center p-4 font-medium">Empresa</th>
                       <th className="text-center p-4 font-medium">Ações</th>
                     </tr>
                   </thead>
@@ -356,17 +387,7 @@ const AccountManager: React.FC = () => {
                           )}
                         </td>
                         <td className="p-4 text-center">
-                          {user.account_frozen ? (
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                              <Snowflake className="w-3 h-3 mr-1" />
-                              Congelada
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">
-                              <Sun className="w-3 h-3 mr-1" />
-                              Ativa
-                            </Badge>
-                          )}
+                          <span className="text-sm">{user.company || '-'}</span>
                         </td>
                         <td className="p-4">
                           <div className="flex items-center justify-center gap-1">
@@ -387,17 +408,15 @@ const AccountManager: React.FC = () => {
                             </Button>
                             <Button
                               size="sm"
-                              variant={user.account_frozen ? "default" : "secondary"}
-                              disabled={actionLoading === `frozen-${user.id}`}
-                              onClick={() => handleToggleFrozen(user)}
+                              variant="outline"
+                              disabled={actionLoading === `edit-${user.id}`}
+                              onClick={() => handleEditUser(user)}
                               className="h-8 px-2 text-xs"
                             >
-                              {actionLoading === `frozen-${user.id}` ? (
+                              {actionLoading === `edit-${user.id}` ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : user.account_frozen ? (
-                                <Sun className="w-3 h-3" />
                               ) : (
-                                <Snowflake className="w-3 h-3" />
+                                <Edit className="w-3 h-3" />
                               )}
                             </Button>
                             <AlertDialog>
@@ -446,6 +465,62 @@ const AccountManager: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Edição */}
+      <Dialog open={showEdit} onOpenChange={setShowEdit}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit_full_name">Nome Completo *</Label>
+              <Input
+                id="edit_full_name"
+                type="text"
+                value={editForm.full_name}
+                onChange={e => setEditForm({ ...editForm, full_name: e.target.value })}
+                required
+                placeholder="Digite o nome completo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_email">Email *</Label>
+              <Input
+                id="edit_email"
+                type="email"
+                value={editForm.email}
+                onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                required
+                placeholder="Digite o email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_company">Empresa</Label>
+              <Input
+                id="edit_company"
+                type="text"
+                value={editForm.company}
+                onChange={e => setEditForm({ ...editForm, company: e.target.value })}
+                placeholder="Digite a empresa (opcional)"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowEdit(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={actionLoading === `edit-${editUser?.id}`}>
+                {actionLoading === `edit-${editUser?.id}` && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Salvar Alterações
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
