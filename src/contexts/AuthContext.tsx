@@ -351,44 +351,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     try {
-      console.log('🚪 Tentando fazer logout...');
+      console.log('🚪 Fazendo logout...');
       
       // Sempre limpar estado local primeiro
       setUser(null);
       setSession(null);
       
-      // Verificar se há uma sessão ativa antes de tentar logout
-      const { data: { session } } = await supabase.auth.getSession();
+      // Mostrar sucesso imediatamente sem tentar fazer logout no servidor
+      // pois geralmente a sessão já está expirada
+      toast({
+        title: "Logout realizado",
+        description: "Até logo!",
+      });
       
-      if (!session) {
-        console.log('ℹ️ Nenhuma sessão ativa encontrada');
-        toast({
-          title: "Logout realizado",
-          description: "Até logo!",
-        });
-        return;
+      // Tentar fazer logout no servidor em background, mas ignorar erros
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+        console.log('✅ Logout local realizado');
+      } catch (backgroundError) {
+        console.log('ℹ️ Logout em background falhou (normal se sessão já expirou):', backgroundError);
       }
       
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('❌ Erro no logout:', error);
-        // Independente do erro, já limpamos o estado local, então apenas mostrar sucesso
-        if (error.message.includes('session_not_found') || error.message.includes('Session not found') || error.message.includes('Auth session missing')) {
-          console.log('ℹ️ Sessão já expirada');
-        }
-        // Sempre mostrar sucesso já que limpamos o estado local
-        toast({
-          title: "Logout realizado",
-          description: "Até logo!",
-        });
-      } else {
-        console.log('✅ Logout bem-sucedido');
-        toast({
-          title: "Logout realizado",
-          description: "Até logo!",
-        });
-      }
     } catch (error) {
       console.error('❌ Erro inesperado no logout:', error);
       // Estado já foi limpo, apenas mostrar sucesso
