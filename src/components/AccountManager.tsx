@@ -16,6 +16,7 @@ interface UserProfile {
   full_name: string;
   company?: string | null;
   pix_key?: string | null;
+  whatsapp?: string | null;
   is_admin: boolean;
   access_granted: boolean;
   account_frozen: boolean;
@@ -45,7 +46,8 @@ const AccountManager: React.FC = () => {
   const [editForm, setEditForm] = useState({
     full_name: '',
     email: '',
-    company: ''
+    company: '',
+    whatsapp: ''
   });
 
   // Buscar usuários usando a função RPC
@@ -160,7 +162,8 @@ const AccountManager: React.FC = () => {
     setEditForm({
       full_name: user.full_name,
       email: user.email,
-      company: user.company || ''
+      company: user.company || '',
+      whatsapp: user.whatsapp || ''
     });
     setShowEdit(true);
   };
@@ -182,7 +185,8 @@ const AccountManager: React.FC = () => {
         .update({ 
           full_name: editForm.full_name,
           email: editForm.email,
-          company: editForm.company || null
+          company: editForm.company || null,
+          whatsapp: editForm.whatsapp || null
         })
         .eq('id', editUser.id);
       
@@ -504,6 +508,16 @@ const AccountManager: React.FC = () => {
                 value={editForm.company}
                 onChange={e => setEditForm({ ...editForm, company: e.target.value })}
                 placeholder="Digite a empresa (opcional)"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_whatsapp">WhatsApp</Label>
+              <Input
+                id="edit_whatsapp"
+                type="text"
+                value={editForm.whatsapp}
+                onChange={e => setEditForm({ ...editForm, whatsapp: e.target.value })}
+                placeholder="Digite o WhatsApp (ex: 15991653601)"
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">
