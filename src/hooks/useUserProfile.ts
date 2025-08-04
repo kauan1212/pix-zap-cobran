@@ -8,6 +8,7 @@ export interface UserProfile {
   full_name: string | null;
   company: string | null;
   pix_key: string | null;
+  whatsapp: string | null;
   is_admin: boolean | null;
   access_granted: boolean | null;
   account_frozen: boolean | null;
@@ -24,7 +25,7 @@ export function useUserProfile() {
       setLoading(true);
       supabase
         .from('profiles')
-        .select('id, email, full_name, company, pix_key, is_admin, access_granted, account_frozen, frozen_reason')
+        .select('id, email, full_name, company, pix_key, whatsapp, is_admin, access_granted, account_frozen, frozen_reason')
         .eq('id', user.id)
         .single()
         .then(({ data, error }) => {

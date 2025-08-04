@@ -38,6 +38,7 @@ const ClientPortal = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pixKey, setPixKey] = useState<string>('');
+  const [userWhatsapp, setUserWhatsapp] = useState<string>('');
   const [extraServices, setExtraServices] = useState<any[]>([]);
 
   useEffect(() => {
@@ -50,6 +51,7 @@ const ClientPortal = () => {
     if (client) {
       loadExtraServices();
       loadPixKey(); // Carrega a chave PIX após o cliente estar disponível
+      loadUserWhatsapp(); // Carrega o WhatsApp do usuário
     }
   }, [client]);
 
@@ -77,6 +79,33 @@ const ClientPortal = () => {
     } catch (error) {
       console.error('Error loading PIX key:', error);
       setPixKey('15991653601');
+    }
+  };
+
+  const loadUserWhatsapp = async () => {
+    try {
+      if (!client?.user_id) {
+        console.error('Client user_id not available');
+        setUserWhatsapp('15991653601');
+        return;
+      }
+
+      // Buscar o WhatsApp do usuário deste cliente
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('whatsapp')
+        .eq('id', client.user_id)
+        .single();
+
+      if (!profileError && profileData?.whatsapp) {
+        setUserWhatsapp(profileData.whatsapp);
+      } else {
+        console.error('Error loading WhatsApp or WhatsApp not found:', profileError);
+        setUserWhatsapp('15991653601');
+      }
+    } catch (error) {
+      console.error('Error loading WhatsApp:', error);
+      setUserWhatsapp('15991653601');
     }
   };
 
@@ -410,7 +439,7 @@ const ClientPortal = () => {
                             const data = formatDateSafely(billing.due_date);
                             const valor = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                             const texto = `Olá! Já realizei o pagamento referente ao vencimento do dia ${data}, parcela ${billing.description}, no valor de ${valor}.`;
-                            const url = `https://wa.me/${client?.phone ? client.phone.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
+                            const url = `https://wa.me/${userWhatsapp ? userWhatsapp.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
                             window.open(url, '_blank');
                           }}
                         >
@@ -492,7 +521,7 @@ const ClientPortal = () => {
                             const data = formatDateSafely(billing.due_date);
                             const valor = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                             const texto = `${saudacao}! Já realizei o pagamento referente do dia: *${data}*\nParcela *${billing.description}*\nValor de *${valor}*.\nSegue o comprovante!`;
-                            const url = `https://wa.me/${client?.phone ? client.phone.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
+                            const url = `https://wa.me/${userWhatsapp ? userWhatsapp.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
                             window.open(url, '_blank');
                           }}
                         >
@@ -558,7 +587,7 @@ const ClientPortal = () => {
                                 })();
                                 const valor = service.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                                 const texto = `${saudacao}! Já realizei o pagamento do serviço extra: *${service.description}*\nValor de *${valor}*.\nSegue o comprovante!`;
-                                const url = `https://wa.me/${client?.phone ? client.phone.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
+                                const url = `https://wa.me/${userWhatsapp ? userWhatsapp.replace(/\D/g, '') : '15991653601'}?text=${encodeURIComponent(texto)}`;
                                 window.open(url, '_blank');
                               }}
                             >

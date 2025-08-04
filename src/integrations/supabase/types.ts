@@ -624,6 +624,7 @@ export type Database = {
           is_admin: boolean | null
           pix_key: string | null
           updated_at: string | null
+          whatsapp: string | null
         }
         Insert: {
           access_granted?: boolean | null
@@ -637,6 +638,7 @@ export type Database = {
           is_admin?: boolean | null
           pix_key?: string | null
           updated_at?: string | null
+          whatsapp?: string | null
         }
         Update: {
           access_granted?: boolean | null
@@ -650,6 +652,7 @@ export type Database = {
           is_admin?: boolean | null
           pix_key?: string | null
           updated_at?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
