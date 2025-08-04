@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
 import { emitEvent } from '@/hooks/useEventBus';
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string, company: string) => Promise<boolean>;
@@ -25,22 +26,39 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Listen for auth changes FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('🔐 Auth state changed:', event, session?.user?.email);
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        
+        // Handle specific auth events
+        if (event === 'SIGNED_OUT') {
+          console.log('👋 User signed out');
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('🔄 Token refreshed');
+        } else if (event === 'SIGNED_IN') {
+          console.log('👋 User signed in');
+        }
+      }
+    );
+
+    // THEN get initial session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('❌ Error getting session:', error);
+      }
+      console.log('📡 Initial session:', session?.user?.email);
+      setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
 
     return () => subscription.unsubscribe();
   }, []);
@@ -332,25 +350,66 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Erro no logout",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+    try {
+      console.log('🚪 Tentando fazer logout...');
+      
+      // Verificar se há uma sessão ativa antes de tentar logout
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log('ℹ️ Nenhuma sessão ativa encontrada, limpando estado local');
+        setUser(null);
+        setSession(null);
+        toast({
+          title: "Logout realizado",
+          description: "Até logo!",
+        });
+        return;
+      }
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('❌ Erro no logout:', error);
+        // Se o erro for de sessão não encontrada, limpar estado local mesmo assim
+        if (error.message.includes('session_not_found') || error.message.includes('Session not found')) {
+          console.log('ℹ️ Sessão já expirada, limpando estado local');
+          setUser(null);
+          setSession(null);
+          toast({
+            title: "Logout realizado",
+            description: "Até logo!",
+          });
+        } else {
+          toast({
+            title: "Erro ao sair",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.log('✅ Logout bem-sucedido');
+        toast({
+          title: "Logout realizado",
+          description: "Até logo!",
+        });
+      }
+    } catch (error) {
+      console.error('❌ Erro inesperado no logout:', error);
+      // Limpar estado local mesmo com erro
+      setUser(null);
+      setSession(null);
       toast({
         title: "Logout realizado",
         description: "Até logo!",
       });
     }
-    setUser(null);
   };
 
   return (
     <AuthContext.Provider value={{
       user,
+      session,
       loading,
       login,
       register,
