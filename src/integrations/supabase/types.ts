@@ -1242,6 +1242,7 @@ export type Database = {
           email: string
           full_name: string
           pix_key: string
+          whatsapp: string
           is_admin: boolean
           access_granted: boolean
           account_frozen: boolean
