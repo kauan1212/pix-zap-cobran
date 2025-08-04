@@ -353,13 +353,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('🚪 Tentando fazer logout...');
       
+      // Sempre limpar estado local primeiro
+      setUser(null);
+      setSession(null);
+      
       // Verificar se há uma sessão ativa antes de tentar logout
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        console.log('ℹ️ Nenhuma sessão ativa encontrada, limpando estado local');
-        setUser(null);
-        setSession(null);
+        console.log('ℹ️ Nenhuma sessão ativa encontrada');
         toast({
           title: "Logout realizado",
           description: "Até logo!",
@@ -371,22 +373,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (error) {
         console.error('❌ Erro no logout:', error);
-        // Se o erro for de sessão não encontrada, limpar estado local mesmo assim
-        if (error.message.includes('session_not_found') || error.message.includes('Session not found')) {
-          console.log('ℹ️ Sessão já expirada, limpando estado local');
-          setUser(null);
-          setSession(null);
-          toast({
-            title: "Logout realizado",
-            description: "Até logo!",
-          });
-        } else {
-          toast({
-            title: "Erro ao sair",
-            description: error.message,
-            variant: "destructive",
-          });
+        // Independente do erro, já limpamos o estado local, então apenas mostrar sucesso
+        if (error.message.includes('session_not_found') || error.message.includes('Session not found') || error.message.includes('Auth session missing')) {
+          console.log('ℹ️ Sessão já expirada');
         }
+        // Sempre mostrar sucesso já que limpamos o estado local
+        toast({
+          title: "Logout realizado",
+          description: "Até logo!",
+        });
       } else {
         console.log('✅ Logout bem-sucedido');
         toast({
@@ -396,9 +391,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error) {
       console.error('❌ Erro inesperado no logout:', error);
-      // Limpar estado local mesmo com erro
-      setUser(null);
-      setSession(null);
+      // Estado já foi limpo, apenas mostrar sucesso
       toast({
         title: "Logout realizado",
         description: "Até logo!",
