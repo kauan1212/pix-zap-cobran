@@ -340,7 +340,7 @@ const ClientPortal = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className={`grid grid-cols-1 ${ownerEmail === 'adrielnata@gmail.com' ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-6 mb-8`}>
+        <div className={`grid grid-cols-1 ${ownerEmail === 'adrielnata@gmail.com' ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-6 mb-8`}>
           {ownerEmail !== 'adrielnata@gmail.com' && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
