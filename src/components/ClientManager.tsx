@@ -272,7 +272,30 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
     try {
       const token = await ensureClientToken(clientId);
       const portalUrl = `${window.location.origin}/client/${token}`;
-      await navigator.clipboard.writeText(portalUrl);
+      
+      // Tentar usar a API moderna do clipboard primeiro
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(portalUrl);
+      } else {
+        // Fallback para navegadores mais antigos ou contextos inseguros
+        const textArea = document.createElement('textarea');
+        textArea.value = portalUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+        } catch (fallbackError) {
+          throw new Error('Não foi possível copiar o link. Tente novamente ou copie manualmente: ' + portalUrl);
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
+      
       toast({
         title: "Link copiado!",
         description: "Link do portal do cliente foi copiado para área de transferência.",
