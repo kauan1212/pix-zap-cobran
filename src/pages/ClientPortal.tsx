@@ -118,22 +118,22 @@ const ClientPortal = () => {
         return;
       }
 
-      // Buscar o email do usuário através da tabela de usuários
-      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(client.user_id);
-      
-      if (!userError && userData?.user?.email) {
-        setOwnerEmail(userData.user.email);
-      } else {
-        // Fallback: buscar através da tabela profiles
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('id', client.user_id)
-          .single();
+      console.log('Loading owner email for user_id:', client.user_id);
 
-        if (!profileError && profileData?.email) {
-          setOwnerEmail(profileData.email);
-        }
+      // Buscar o email do proprietário através da tabela profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', client.user_id)
+        .single();
+
+      console.log('Profile data:', profileData, 'Error:', profileError);
+
+      if (!profileError && profileData?.email) {
+        setOwnerEmail(profileData.email);
+        console.log('Owner email set to:', profileData.email);
+      } else {
+        console.error('Error loading owner email or email not found:', profileError);
       }
     } catch (error) {
       console.error('Error loading owner email:', error);
@@ -304,6 +304,9 @@ const ClientPortal = () => {
   const totalPaid = paidBillings.reduce((sum, billing) => sum + billing.amount, 0);
   const totalExtraPaid = extraServices.filter(s => s.status === 'pago').reduce((sum, s) => sum + s.amount, 0);
   const totalExtraPending = extraServices.filter(s => s.status !== 'pago').reduce((sum, s) => sum + s.amount, 0);
+
+  // Debug log
+  console.log('DEBUG - ownerEmail:', ownerEmail, 'comparison:', ownerEmail === 'adrielnata@gmail.com');
 
   return (
     <div className="min-h-screen bg-gray-50">
