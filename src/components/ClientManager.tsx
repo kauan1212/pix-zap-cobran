@@ -273,29 +273,16 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
       const token = await ensureClientToken(clientId);
       const portalUrl = `${window.location.origin}/client/${token}`;
       
-      // Detectar se é mobile
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      // Em mobile, sempre mostrar o link para cópia manual
-      if (isMobile) {
-        toast({
-          title: "Link do Portal do Cliente",
-          description: `Toque e segure para copiar: ${portalUrl}`,
-          duration: 15000,
-        });
-        return;
-      }
-      
-      // Para desktop, tentar cópia automática
       let copySuccess = false;
       
+      // Tentar clipboard API primeiro
       try {
         if (navigator.clipboard && window.isSecureContext) {
           await navigator.clipboard.writeText(portalUrl);
           copySuccess = true;
         }
       } catch (clipboardError) {
-        // Fallback silencioso
+        // Fallback com execCommand
         try {
           const textArea = document.createElement('textarea');
           textArea.value = portalUrl;
@@ -311,19 +298,20 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
           }
           document.body.removeChild(textArea);
         } catch (fallbackError) {
-          // Ignore
+          // Se todos os métodos falharem, mostrar para cópia manual
+          copySuccess = false;
         }
       }
       
       if (copySuccess) {
         toast({
           title: "Link copiado!",
-          description: "Link do portal foi copiado para área de transferência.",
+          description: "Link do portal copiado para área de transferência.",
         });
       } else {
         toast({
           title: "Link do Portal do Cliente",
-          description: `Copie este link: ${portalUrl}`,
+          description: `Toque e segure para copiar: ${portalUrl}`,
           duration: 15000,
         });
       }
