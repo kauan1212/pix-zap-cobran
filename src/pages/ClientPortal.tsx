@@ -40,6 +40,7 @@ const ClientPortal = () => {
   const [pixKey, setPixKey] = useState<string>('');
   const [userWhatsapp, setUserWhatsapp] = useState<string>('');
   const [extraServices, setExtraServices] = useState<any[]>([]);
+  const [ownerEmail, setOwnerEmail] = useState<string>('');
 
   useEffect(() => {
     if (token) {
@@ -52,6 +53,7 @@ const ClientPortal = () => {
       loadExtraServices();
       loadPixKey(); // Carrega a chave PIX após o cliente estar disponível
       loadUserWhatsapp(); // Carrega o WhatsApp do usuário
+      loadOwnerEmail(); // Carrega o email do dono da conta
     }
   }, [client]);
 
@@ -106,6 +108,35 @@ const ClientPortal = () => {
     } catch (error) {
       console.error('Error loading WhatsApp:', error);
       setUserWhatsapp('15991653601');
+    }
+  };
+
+  const loadOwnerEmail = async () => {
+    try {
+      if (!client?.user_id) {
+        console.error('Client user_id not available');
+        return;
+      }
+
+      // Buscar o email do usuário através da tabela de usuários
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(client.user_id);
+      
+      if (!userError && userData?.user?.email) {
+        setOwnerEmail(userData.user.email);
+      } else {
+        // Fallback: buscar através da tabela profiles
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', client.user_id)
+          .single();
+
+        if (!profileError && profileData?.email) {
+          setOwnerEmail(profileData.email);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading owner email:', error);
     }
   };
 
@@ -309,8 +340,8 @@ const ClientPortal = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className={`grid grid-cols-1 ${client?.email === 'adrielnata@gmail.com' ? 'md:grid-cols-1' : 'md:grid-cols-3'} gap-6 mb-8`}>
-          {client?.email !== 'adrielnata@gmail.com' && (
+        <div className={`grid grid-cols-1 ${ownerEmail === 'adrielnata@gmail.com' ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-6 mb-8`}>
+          {ownerEmail !== 'adrielnata@gmail.com' && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">Total Pendente</CardTitle>
