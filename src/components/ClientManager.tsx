@@ -273,22 +273,30 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
       const token = await ensureClientToken(clientId);
       const portalUrl = `${window.location.origin}/client/${token}`;
       
+      // Detectar se é mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      // Em mobile, sempre mostrar o link para cópia manual
+      if (isMobile) {
+        toast({
+          title: "Link do Portal do Cliente",
+          description: `Toque e segure para copiar: ${portalUrl}`,
+          duration: 15000,
+        });
+        return;
+      }
+      
+      // Para desktop, tentar cópia automática
       let copySuccess = false;
       
-      // Tentar múltiplos métodos de cópia
       try {
-        // Método 1: API moderna do clipboard
         if (navigator.clipboard && window.isSecureContext) {
           await navigator.clipboard.writeText(portalUrl);
           copySuccess = true;
         }
       } catch (clipboardError) {
-        console.log('Clipboard API falhou, tentando fallback...');
-      }
-      
-      if (!copySuccess) {
+        // Fallback silencioso
         try {
-          // Método 2: Fallback com textarea
           const textArea = document.createElement('textarea');
           textArea.value = portalUrl;
           textArea.style.position = 'fixed';
@@ -298,28 +306,25 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
           textArea.focus();
           textArea.select();
           
-          const success = document.execCommand('copy');
-          document.body.removeChild(textArea);
-          
-          if (success) {
+          if (document.execCommand('copy')) {
             copySuccess = true;
           }
+          document.body.removeChild(textArea);
         } catch (fallbackError) {
-          console.log('Fallback de cópia falhou');
+          // Ignore
         }
       }
       
       if (copySuccess) {
         toast({
           title: "Link copiado!",
-          description: "Link do portal do cliente foi copiado para área de transferência.",
+          description: "Link do portal foi copiado para área de transferência.",
         });
       } else {
-        // Se não conseguir copiar, mostra o link para cópia manual
         toast({
-          title: "Link do Portal",
+          title: "Link do Portal do Cliente",
           description: `Copie este link: ${portalUrl}`,
-          duration: 10000,
+          duration: 15000,
         });
       }
     } catch (error: any) {
