@@ -273,33 +273,55 @@ const ClientManager = ({ onDataChange }: ClientManagerProps) => {
       const token = await ensureClientToken(clientId);
       const portalUrl = `${window.location.origin}/client/${token}`;
       
-      // Tentar usar a API moderna do clipboard primeiro
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(portalUrl);
-      } else {
-        // Fallback para navegadores mais antigos ou contextos inseguros
-        const textArea = document.createElement('textarea');
-        textArea.value = portalUrl;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
+      let copySuccess = false;
+      
+      // Tentar múltiplos métodos de cópia
+      try {
+        // Método 1: API moderna do clipboard
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(portalUrl);
+          copySuccess = true;
+        }
+      } catch (clipboardError) {
+        console.log('Clipboard API falhou, tentando fallback...');
+      }
+      
+      if (!copySuccess) {
         try {
-          document.execCommand('copy');
-        } catch (fallbackError) {
-          throw new Error('Não foi possível copiar o link. Tente novamente ou copie manualmente: ' + portalUrl);
-        } finally {
+          // Método 2: Fallback com textarea
+          const textArea = document.createElement('textarea');
+          textArea.value = portalUrl;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          textArea.style.top = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          
+          const success = document.execCommand('copy');
           document.body.removeChild(textArea);
+          
+          if (success) {
+            copySuccess = true;
+          }
+        } catch (fallbackError) {
+          console.log('Fallback de cópia falhou');
         }
       }
       
-      toast({
-        title: "Link copiado!",
-        description: "Link do portal do cliente foi copiado para área de transferência.",
-      });
+      if (copySuccess) {
+        toast({
+          title: "Link copiado!",
+          description: "Link do portal do cliente foi copiado para área de transferência.",
+        });
+      } else {
+        // Se não conseguir copiar, mostra o link para cópia manual
+        toast({
+          title: "Link do Portal",
+          description: `Copie este link: ${portalUrl}`,
+          duration: 10000,
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao gerar link",
