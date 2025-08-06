@@ -343,8 +343,8 @@ const ClientPortal = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className={`grid grid-cols-1 ${ownerEmail === 'adrielnata@gmail.com' ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-6 mb-8`}>
-          {ownerEmail !== 'adrielnata@gmail.com' && (
+        <div className={`grid grid-cols-1 ${ownerEmail === 'kauankg@hotmail.com' ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6 mb-8`}>
+          {ownerEmail === 'kauankg@hotmail.com' && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">Total Pendente</CardTitle>
