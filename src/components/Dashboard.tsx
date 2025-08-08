@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Users, Receipt, Settings, Clock, Key, UserCog, AlertTriangle } from 'lucide-react';
+import { LogOut, Users, Receipt, Settings, Clock, Key, UserCog, AlertTriangle, ListChecks } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ClientManager from './ClientManager';
 import BillingManager from './BillingManager';
@@ -214,7 +214,7 @@ const Dashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile-optimized tab navigation */}
           <div className="w-full overflow-x-auto scrollbar-hide">
-            <TabsList className={`grid w-max ${user?.email === 'kauankg@hotmail.com' ? 'grid-cols-6' : 'grid-cols-5'} min-w-full`}>
+            <TabsList className={`grid w-max ${user?.email === 'kauankg@hotmail.com' ? 'grid-cols-7' : 'grid-cols-6'} min-w-full`}>
               <TabsTrigger value="clients" className="flex items-center gap-2 mobile-button px-3">
                 <Users className="w-4 h-4" />
                 <span className="text-xs sm:text-sm">Clientes</span>
@@ -235,6 +235,16 @@ const Dashboard = () => {
                 <Key className="w-4 h-4" />
                 <span className="text-xs sm:text-sm">PIX</span>
               </TabsTrigger>
+              <a
+                href="https://moto-check-pdf-gen.lovable.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-background mobile-button gap-2"
+                aria-label="Abrir CheckList - acesso"
+              >
+                <ListChecks className="w-4 h-4" />
+                <span className="text-xs sm:text-sm">CheckList - acesso</span>
+              </a>
               {/* Controle de Contas - Apenas para kauankg@hotmail.com */}
               {user?.email === 'kauankg@hotmail.com' && (
                 <TabsTrigger value="accounts" className="flex items-center gap-2 mobile-button px-3">
