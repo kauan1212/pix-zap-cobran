@@ -228,26 +228,48 @@ Obrigado!`;
     if (!client) return '';
 
     const dueDate = formatDateSafely(billing.due_date);
-    const amount = billing.amount.toLocaleString('pt-BR', { 
-      style: 'currency', 
-      currency: 'BRL' 
-    });
-
+    
     // Calcular dias de atraso
     const today = new Date();
     const dueDateObj = new Date(billing.due_date);
     const daysOverdue = Math.floor((today.getTime() - dueDateObj.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Calcular valor com multa e juros
+    let finalAmount = billing.amount;
+    
+    // Aplicar multa de 10% no primeiro dia de atraso
+    if (daysOverdue > 0) {
+      finalAmount = billing.amount * 1.1; // 10% de multa
+      
+      // Aplicar juros de 0,04% ao dia sobre o valor já com multa
+      if (daysOverdue > 0) {
+        const dailyInterestRate = 0.0004; // 0,04% ao dia
+        const interestMultiplier = 1 + (dailyInterestRate * daysOverdue);
+        finalAmount = finalAmount * interestMultiplier;
+      }
+    }
+
+    const formattedAmount = finalAmount.toLocaleString('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    });
+
+    const originalAmount = billing.amount.toLocaleString('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    });
 
     let message = `Prezado(a) ${client.name},
 
 Informamos que a parcela referente a ${billing.description} está em atraso desde ${dueDate} (${daysOverdue} dia${daysOverdue > 1 ? 's' : ''} de atraso).
 
 📋 Detalhes da cobrança:
-• Valor: ${amount}
+• Valor original: ${originalAmount}
+• Valor atualizado: ${formattedAmount}
 • Vencimento: ${dueDate}
 • Descrição: ${billing.description}
 
-⚠️ Para evitar acréscimos de multas e juros, solicitamos a regularização do pagamento o quanto antes.
+⚠️ Para evitar mais acréscimos, solicitamos a regularização do pagamento o quanto antes.
 
 💳 Pagamento via PIX:
 Chave: ${userPixKey}
@@ -259,15 +281,16 @@ Agradecemos a atenção e aguardamos o retorno.
 Atenciosamente,
 Equipe Financeira`;
 
-    // Adicionar informações sobre multas se aplicável
-    if (billing.penalty || billing.interest) {
-      message += `\n\n📌 Observações importantes:`;
-      if (billing.penalty) {
-        message += `\n• Multa por atraso: R$ ${billing.penalty.toFixed(2)}`;
+    // Adicionar detalhamento dos acréscimos
+    if (daysOverdue > 0) {
+      message += `\n\n📌 Composição do valor atualizado:`;
+      message += `\n• Valor original: ${originalAmount}`;
+      message += `\n• Multa (10%): ${(billing.amount * 0.1).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+      if (daysOverdue > 0) {
+        const interestAmount = (billing.amount * 1.1 * 0.0004 * daysOverdue);
+        message += `\n• Juros (0,04% ao dia por ${daysOverdue} dia${daysOverdue > 1 ? 's' : ''}): ${interestAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
       }
-      if (billing.interest) {
-        message += `\n• Juros de mora: ${billing.interest}% ao dia`;
-      }
+      message += `\n• Total: ${formattedAmount}`;
     }
 
     return message;
