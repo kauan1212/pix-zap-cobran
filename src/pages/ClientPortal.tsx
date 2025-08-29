@@ -16,6 +16,7 @@ interface Client {
   email: string;
   phone: string;
   user_id: string;
+  show_total_pending?: boolean;
 }
 
 interface Billing {
@@ -41,6 +42,7 @@ const ClientPortal = () => {
   const [userWhatsapp, setUserWhatsapp] = useState<string>('');
   const [extraServices, setExtraServices] = useState<any[]>([]);
   const [ownerEmail, setOwnerEmail] = useState<string>('');
+  const [showTotalPending, setShowTotalPending] = useState<boolean>(true);
 
   useEffect(() => {
     if (token) {
@@ -183,7 +185,7 @@ const ClientPortal = () => {
       // Buscar dados do cliente
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
-        .select('id, name, email, phone, user_id')
+        .select('id, name, email, phone, user_id, show_total_pending')
         .eq('id', tokenData.client_id)
         .single();
 
@@ -196,6 +198,9 @@ const ClientPortal = () => {
       }
 
       setClient(clientData);
+      
+      // Definir se deve mostrar o total pendente baseado na configuração do cliente
+      setShowTotalPending(clientData.show_total_pending ?? true);
 
       // Carregar cobranças deste cliente
       const { data: billingsData, error: billingsError } = await supabase
@@ -343,8 +348,8 @@ const ClientPortal = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className={`grid grid-cols-1 ${ownerEmail === 'kauankg@hotmail.com' ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6 mb-8`}>
-          {ownerEmail === 'kauankg@hotmail.com' && (
+        <div className={`grid grid-cols-1 ${showTotalPending ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6 mb-8`}>
+          {showTotalPending && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">Total Pendente</CardTitle>

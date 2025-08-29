@@ -15,6 +15,7 @@ import ExtraServicesManager from './ExtraServicesManager';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AccountManager from './AccountManager';
 import PaymentAlertsModal from './PaymentAlertsModal';
+import ClientSettingsManager from './ClientSettingsManager';
 
 interface Client {
   id: string;
@@ -214,7 +215,7 @@ const Dashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile-optimized tab navigation */}
           <div className="w-full overflow-x-auto scrollbar-hide">
-            <TabsList className={`grid w-max ${user?.email === 'kauankg@hotmail.com' ? 'grid-cols-7' : 'grid-cols-6'} min-w-full`}>
+            <TabsList className={`grid w-max ${user?.email === 'kauankg@hotmail.com' ? 'grid-cols-8' : 'grid-cols-6'} min-w-full`}>
               <TabsTrigger value="clients" className="flex items-center gap-2 mobile-button px-3">
                 <Users className="w-4 h-4" />
                 <span className="text-xs sm:text-sm">Clientes</span>
@@ -247,10 +248,16 @@ const Dashboard = () => {
               </a>
               {/* Controle de Contas - Apenas para kauankg@hotmail.com */}
               {user?.email === 'kauankg@hotmail.com' && (
-                <TabsTrigger value="accounts" className="flex items-center gap-2 mobile-button px-3">
-                  <UserCog className="w-4 h-4" />
-                  <span className="text-xs sm:text-sm">Controle de Contas</span>
-                </TabsTrigger>
+                <>
+                  <TabsTrigger value="accounts" className="flex items-center gap-2 mobile-button px-3">
+                    <UserCog className="w-4 h-4" />
+                    <span className="text-xs sm:text-sm">Contas</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="client-settings" className="flex items-center gap-2 mobile-button px-3">
+                    <Users className="w-4 h-4" />
+                    <span className="text-xs sm:text-sm">Config. Clientes</span>
+                  </TabsTrigger>
+                </>
               )}
             </TabsList>
           </div>
@@ -277,9 +284,14 @@ const Dashboard = () => {
 
           {/* Controle de Contas - Apenas para kauankg@hotmail.com */}
           {user?.email === 'kauankg@hotmail.com' && (
-            <TabsContent value="accounts">
-              <AccountManager />
-            </TabsContent>
+            <>
+              <TabsContent value="accounts">
+                <AccountManager />
+              </TabsContent>
+              <TabsContent value="client-settings">
+                <ClientSettingsManager />
+              </TabsContent>
+            </>
           )}
         </Tabs>
       </div>

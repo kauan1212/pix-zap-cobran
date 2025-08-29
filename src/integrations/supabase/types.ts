@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -347,6 +347,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          show_total_pending: boolean | null
           updated_at: string
           user_id: string
         }
@@ -358,6 +359,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
+          show_total_pending?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -369,6 +371,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          show_total_pending?: boolean | null
           updated_at?: string
           user_id?: string
         }
@@ -1204,10 +1207,10 @@ export type Database = {
     Functions: {
       create_user_with_profile: {
         Args: {
-          user_email: string
-          user_password: string
-          user_full_name: string
           user_company: string
+          user_email: string
+          user_full_name: string
+          user_password: string
         }
         Returns: Json
       }
@@ -1222,40 +1225,40 @@ export type Database = {
       get_all_profiles: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          email: string
-          full_name: string
-          company: string
-          pix_key: string
-          whatsapp: string
-          is_admin: boolean
           access_granted: boolean
           account_frozen: boolean
-          frozen_reason: string
+          company: string
           created_at: string
+          email: string
+          frozen_reason: string
+          full_name: string
+          id: string
+          is_admin: boolean
+          pix_key: string
           updated_at: string
+          whatsapp: string
         }[]
       }
       get_all_profiles_simple: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          email: string
-          full_name: string
-          pix_key: string
-          whatsapp: string
-          is_admin: boolean
           access_granted: boolean
           account_frozen: boolean
-          frozen_reason: string
           created_at: string
+          email: string
+          frozen_reason: string
+          full_name: string
+          id: string
+          is_admin: boolean
+          pix_key: string
           updated_at: string
+          whatsapp: string
         }[]
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
