@@ -187,19 +187,50 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
       currency: 'BRL' 
     });
 
+    // Buscar serviços extras pendentes do cliente
+    const clientExtraServices = extraServices.filter(service => 
+      service.client_id === billing.client_id && service.status === 'pendente'
+    );
+    
+    const extraServicesTotal = clientExtraServices.reduce((total, service) => 
+      total + Number(service.amount), 0
+    );
+
     let message = `Olá, ${client.name}! 
+
+Sou a *Valéria*, sua assistente virtual do WhatsApp Business. 
 
 Você tem uma nova cobrança:
 💰 Valor: ${amount}
 📅 Vencimento: ${dueDate}
-📝 Descrição: ${billing.description}
+📝 Descrição: ${billing.description}`;
 
-💳 Para pagar via PIX, use a chave:
+    // Adicionar serviços extras se houver
+    if (clientExtraServices.length > 0) {
+      message += `\n\n📋 *Serviços extras pendentes:*`;
+      clientExtraServices.forEach(service => {
+        const serviceAmount = Number(service.amount).toLocaleString('pt-BR', { 
+          style: 'currency', 
+          currency: 'BRL' 
+        });
+        message += `\n• ${service.description}: ${serviceAmount}`;
+      });
+      
+      const totalWithExtras = billing.amount + extraServicesTotal;
+      const totalFormatted = totalWithExtras.toLocaleString('pt-BR', { 
+        style: 'currency', 
+        currency: 'BRL' 
+      });
+      message += `\n\n💰 *Total geral (cobrança + serviços):* ${totalFormatted}`;
+    }
+
+    message += `\n\n💳 Para pagar via PIX, use a chave:
 ${userPixKey}
 
 Após o pagamento, envie o comprovante para confirmarmos.
 
-Obrigado!`;
+Atenciosamente,
+*Valéria* - Assistente Virtual 🤖`;
 
     if (billing.penalty || billing.interest) {
       message += `\n\n⚠️ Em caso de atraso:`;
@@ -259,7 +290,18 @@ Obrigado!`;
       currency: 'BRL' 
     });
 
+    // Buscar serviços extras pendentes do cliente
+    const clientExtraServices = extraServices.filter(service => 
+      service.client_id === billing.client_id && service.status === 'pendente'
+    );
+    
+    const extraServicesTotal = clientExtraServices.reduce((total, service) => 
+      total + Number(service.amount), 0
+    );
+
     let message = `Prezado(a) ${client.name},
+
+Sou a *Valéria*, sua assistente virtual do WhatsApp Business.
 
 Informamos que a parcela referente a ${billing.description} está em atraso desde ${dueDate} (${daysOverdue} dia${daysOverdue > 1 ? 's' : ''} de atraso).
 
@@ -267,9 +309,28 @@ Informamos que a parcela referente a ${billing.description} está em atraso desd
 • Valor original: ${originalAmount}
 • Valor atualizado: ${formattedAmount}
 • Vencimento: ${dueDate}
-• Descrição: ${billing.description}
+• Descrição: ${billing.description}`;
 
-⚠️ Para evitar mais acréscimos, solicitamos a regularização do pagamento o quanto antes.
+    // Adicionar serviços extras se houver
+    if (clientExtraServices.length > 0) {
+      message += `\n\n📋 *Serviços extras pendentes:*`;
+      clientExtraServices.forEach(service => {
+        const serviceAmount = Number(service.amount).toLocaleString('pt-BR', { 
+          style: 'currency', 
+          currency: 'BRL' 
+        });
+        message += `\n• ${service.description}: ${serviceAmount}`;
+      });
+      
+      const totalWithExtras = finalAmount + extraServicesTotal;
+      const totalFormatted = totalWithExtras.toLocaleString('pt-BR', { 
+        style: 'currency', 
+        currency: 'BRL' 
+      });
+      message += `\n\n💰 *Total geral (cobrança atualizada + serviços):* ${totalFormatted}`;
+    }
+
+    message += `\n\n⚠️ Para evitar mais acréscimos, solicitamos a regularização do pagamento o quanto antes.
 
 💳 Pagamento via PIX:
 Chave: ${userPixKey}
@@ -279,7 +340,7 @@ Após o pagamento, envie o comprovante para confirmação.
 Agradecemos a atenção e aguardamos o retorno.
 
 Atenciosamente,
-Equipe Financeira`;
+*Valéria* - Assistente Virtual 🤖`;
 
     // Adicionar detalhamento dos acréscimos
     if (daysOverdue > 0) {
@@ -315,16 +376,46 @@ Equipe Financeira`;
       currency: 'BRL' 
     });
 
+    // Buscar serviços extras pendentes do cliente
+    const clientExtraServices = extraServices.filter(service => 
+      service.client_id === billing.client_id && service.status === 'pendente'
+    );
+    
+    const extraServicesTotal = clientExtraServices.reduce((total, service) => 
+      total + Number(service.amount), 0
+    );
+
     let message = `Prezado(a) ${client.name},
+
+Sou a *Valéria*, sua assistente virtual do WhatsApp Business.
 
 Informamos que a parcela referente a ${billing.description} vence hoje (${dueDate}).
 
 📋 Detalhes da cobrança:
 • Valor: ${amount}
 • Vencimento: ${dueDate}
-• Descrição: ${billing.description}
+• Descrição: ${billing.description}`;
 
-💳 Para realizar o pagamento via PIX, utilize a chave:
+    // Adicionar serviços extras se houver
+    if (clientExtraServices.length > 0) {
+      message += `\n\n📋 *Serviços extras pendentes:*`;
+      clientExtraServices.forEach(service => {
+        const serviceAmount = Number(service.amount).toLocaleString('pt-BR', { 
+          style: 'currency', 
+          currency: 'BRL' 
+        });
+        message += `\n• ${service.description}: ${serviceAmount}`;
+      });
+      
+      const totalWithExtras = billing.amount + extraServicesTotal;
+      const totalFormatted = totalWithExtras.toLocaleString('pt-BR', { 
+        style: 'currency', 
+        currency: 'BRL' 
+      });
+      message += `\n\n💰 *Total geral (cobrança + serviços):* ${totalFormatted}`;
+    }
+
+    message += `\n\n💳 Para realizar o pagamento via PIX, utilize a chave:
 ${userPixKey}
 
 ⚠️ Importante: Para evitar acréscimos de multas e juros, recomendamos o pagamento até o final do dia.
@@ -334,7 +425,7 @@ Após o pagamento, envie o comprovante para confirmação.
 Agradecemos a atenção.
 
 Atenciosamente,
-Equipe Financeira`;
+*Valéria* - Assistente Virtual 🤖`;
 
     // Adicionar informações sobre multas se aplicável
     if (billing.penalty || billing.interest) {
@@ -409,7 +500,58 @@ Equipe Financeira`;
     if (!client) return '';
     const dueDate = formatDateSafely(billing.due_date);
     const amount = billing.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    let message = `Prezado(a) ${client.name},\n\nLembramos que a parcela referente a ${billing.description} vence em breve (${dueDate}).\n\n📋 Detalhes da cobrança:\n• Valor: ${amount}\n• Vencimento: ${dueDate}\n• Descrição: ${billing.description}\n\n💳 Para realizar o pagamento via PIX, utilize a chave:\n${userPixKey}\n\nEvite juros e multas realizando o pagamento até a data de vencimento.\n\nApós o pagamento, envie o comprovante para confirmação.\n\nAgradecemos a atenção.\n\nAtenciosamente,\nEquipe Financeira`;
+    
+    // Buscar serviços extras pendentes do cliente
+    const clientExtraServices = extraServices.filter(service => 
+      service.client_id === billing.client_id && service.status === 'pendente'
+    );
+    
+    const extraServicesTotal = clientExtraServices.reduce((total, service) => 
+      total + Number(service.amount), 0
+    );
+
+    let message = `Prezado(a) ${client.name},
+
+Sou a *Valéria*, sua assistente virtual do WhatsApp Business.
+
+Lembramos que a parcela referente a ${billing.description} vence em breve (${dueDate}).
+
+📋 Detalhes da cobrança:
+• Valor: ${amount}
+• Vencimento: ${dueDate}
+• Descrição: ${billing.description}`;
+
+    // Adicionar serviços extras se houver
+    if (clientExtraServices.length > 0) {
+      message += `\n\n📋 *Serviços extras pendentes:*`;
+      clientExtraServices.forEach(service => {
+        const serviceAmount = Number(service.amount).toLocaleString('pt-BR', { 
+          style: 'currency', 
+          currency: 'BRL' 
+        });
+        message += `\n• ${service.description}: ${serviceAmount}`;
+      });
+      
+      const totalWithExtras = billing.amount + extraServicesTotal;
+      const totalFormatted = totalWithExtras.toLocaleString('pt-BR', { 
+        style: 'currency', 
+        currency: 'BRL' 
+      });
+      message += `\n\n💰 *Total geral (cobrança + serviços):* ${totalFormatted}`;
+    }
+
+    message += `\n\n💳 Para realizar o pagamento via PIX, utilize a chave:
+${userPixKey}
+
+Evite juros e multas realizando o pagamento até a data de vencimento.
+
+Após o pagamento, envie o comprovante para confirmação.
+
+Agradecemos a atenção.
+
+Atenciosamente,
+*Valéria* - Assistente Virtual 🤖`;
+
     return message;
   };
   const copyPreDueMessage = (billing: Billing) => {
