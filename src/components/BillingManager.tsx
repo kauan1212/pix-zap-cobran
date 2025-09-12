@@ -198,7 +198,7 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
 
     let message = `Olá, ${client.name}! 
 
-Sou a *Valéria*, sua assistente virtual do WhatsApp Business. 
+Sou a Valéria, sua assistente virtual. 
 
 Você tem uma nova cobrança:
 💰 Valor: ${amount}
@@ -230,7 +230,7 @@ ${userPixKey}
 Após o pagamento, envie o comprovante para confirmarmos.
 
 Atenciosamente,
-*Valéria* - Assistente Virtual 🤖`;
+Valéria - Assistente Virtual 🤖`;
 
     if (billing.penalty || billing.interest) {
       message += `\n\n⚠️ Em caso de atraso:`;
@@ -301,7 +301,7 @@ Atenciosamente,
 
     let message = `Prezado(a) ${client.name},
 
-Sou a *Valéria*, sua assistente virtual do WhatsApp Business.
+Sou a Valéria, sua assistente virtual.
 
 Informamos que a parcela referente a ${billing.description} está em atraso desde ${dueDate} (${daysOverdue} dia${daysOverdue > 1 ? 's' : ''} de atraso).
 
@@ -340,19 +340,7 @@ Após o pagamento, envie o comprovante para confirmação.
 Agradecemos a atenção e aguardamos o retorno.
 
 Atenciosamente,
-*Valéria* - Assistente Virtual 🤖`;
-
-    // Adicionar detalhamento dos acréscimos
-    if (daysOverdue > 0) {
-      message += `\n\n📌 Composição do valor atualizado:`;
-      message += `\n• Valor original: ${originalAmount}`;
-      message += `\n• Multa (10%): ${(billing.amount * 0.1).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
-      if (daysOverdue > 0) {
-        const interestAmount = (billing.amount * 1.1 * 0.0004 * daysOverdue);
-        message += `\n• Juros (0,04% ao dia por ${daysOverdue} dia${daysOverdue > 1 ? 's' : ''}): ${interestAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
-      }
-      message += `\n• Total: ${formattedAmount}`;
-    }
+Valéria - Assistente Virtual 🤖`;
 
     return message;
   };
@@ -387,7 +375,7 @@ Atenciosamente,
 
     let message = `Prezado(a) ${client.name},
 
-Sou a *Valéria*, sua assistente virtual do WhatsApp Business.
+Sou a Valéria, sua assistente virtual.
 
 Informamos que a parcela referente a ${billing.description} vence hoje (${dueDate}).
 
@@ -425,7 +413,7 @@ Após o pagamento, envie o comprovante para confirmação.
 Agradecemos a atenção.
 
 Atenciosamente,
-*Valéria* - Assistente Virtual 🤖`;
+Valéria - Assistente Virtual 🤖`;
 
     // Adicionar informações sobre multas se aplicável
     if (billing.penalty || billing.interest) {
