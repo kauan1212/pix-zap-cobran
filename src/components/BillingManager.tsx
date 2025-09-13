@@ -224,8 +224,8 @@ Você tem uma nova cobrança:
       message += `\n\n💰 *Total geral (cobrança + serviços):* ${totalFormatted}`;
     }
 
-    message += `\n\n💳 Para pagar via PIX, use a chave:
-${userPixKey}
+    message += `\n\n💳 Para pagamento via PIX:
+Basta clicar no botão copiar chave pix e pagar em seu banco.
 
 Após o pagamento, envie o comprovante para confirmarmos.
 
@@ -333,7 +333,7 @@ Informamos que a parcela referente a ${billing.description} está em atraso desd
     message += `\n\n⚠️ Para evitar mais acréscimos, solicitamos a regularização do pagamento o quanto antes.
 
 💳 Pagamento via PIX:
-Chave: ${userPixKey}
+Basta clicar no botão copiar chave pix e pagar em seu banco.
 
 Após o pagamento, envie o comprovante para confirmação.
 
@@ -403,8 +403,8 @@ Informamos que a parcela referente a ${billing.description} vence hoje (${dueDat
       message += `\n\n💰 *Total geral (cobrança + serviços):* ${totalFormatted}`;
     }
 
-    message += `\n\n💳 Para realizar o pagamento via PIX, utilize a chave:
-${userPixKey}
+    message += `\n\n💳 Para pagamento via PIX:
+Basta clicar no botão copiar chave pix e pagar em seu banco.
 
 ⚠️ Importante: Para evitar acréscimos de multas e juros, recomendamos o pagamento até o final do dia.
 
@@ -528,8 +528,8 @@ Lembramos que a parcela referente a ${billing.description} vence em breve (${due
       message += `\n\n💰 *Total geral (cobrança + serviços):* ${totalFormatted}`;
     }
 
-    message += `\n\n💳 Para realizar o pagamento via PIX, utilize a chave:
-${userPixKey}
+    message += `\n\n💳 Para pagamento via PIX:
+Basta clicar no botão copiar chave pix e pagar em seu banco.
 
 Evite juros e multas realizando o pagamento até a data de vencimento.
 
