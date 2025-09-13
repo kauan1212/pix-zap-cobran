@@ -227,10 +227,7 @@ Você tem uma nova cobrança:
     message += `\n\n💳 Para pagamento via PIX:
 Basta clicar no botão copiar chave pix e pagar em seu banco.
 
-Após o pagamento, envie o comprovante para confirmarmos.
-
-Atenciosamente,
-Valéria - Assistente Virtual 🤖`;
+Após o pagamento, envie o comprovante para confirmarmos.`;
 
     if (billing.penalty || billing.interest) {
       message += `\n\n⚠️ Em caso de atraso:`;
@@ -303,7 +300,7 @@ Valéria - Assistente Virtual 🤖`;
 
 Sou a Valéria, sua assistente virtual.
 
-Informamos que a parcela referente a ${billing.description} está em atraso desde ${dueDate} (${daysOverdue} dia${daysOverdue > 1 ? 's' : ''} de atraso).
+Temos uma cobrança em atraso que precisa de sua atenção.
 
 📋 Detalhes da cobrança:
 • Valor original: ${originalAmount}
@@ -337,10 +334,7 @@ Basta clicar no botão copiar chave pix e pagar em seu banco.
 
 Após o pagamento, envie o comprovante para confirmação.
 
-Agradecemos a atenção e aguardamos o retorno.
-
-Atenciosamente,
-Valéria - Assistente Virtual 🤖`;
+Agradecemos a atenção e aguardamos o retorno.`;
 
     return message;
   };
@@ -410,10 +404,7 @@ Basta clicar no botão copiar chave pix e pagar em seu banco.
 
 Após o pagamento, envie o comprovante para confirmação.
 
-Agradecemos a atenção.
-
-Atenciosamente,
-Valéria - Assistente Virtual 🤖`;
+Agradecemos a atenção.`;
 
     // Adicionar informações sobre multas se aplicável
     if (billing.penalty || billing.interest) {
@@ -535,10 +526,7 @@ Evite juros e multas realizando o pagamento até a data de vencimento.
 
 Após o pagamento, envie o comprovante para confirmação.
 
-Agradecemos a atenção.
-
-Atenciosamente,
-*Valéria* - Assistente Virtual 🤖`;
+Agradecemos a atenção.`;
 
     return message;
   };
