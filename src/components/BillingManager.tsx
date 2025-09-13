@@ -300,8 +300,6 @@ Após o pagamento, envie o comprovante para confirmarmos.`;
 
 Sou a Valéria, sua assistente virtual.
 
-Temos uma cobrança em atraso que precisa de sua atenção.
-
 📋 Detalhes da cobrança:
 • Valor original: ${originalAmount}
 • Valor atualizado: ${formattedAmount}
