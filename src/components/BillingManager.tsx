@@ -198,7 +198,7 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
 
     let message = `Olá, ${client.name}! 
 
-Sou a Valéria, sua assistente virtual. 
+Sou a Valéria, assistente virtual da LocAuto - aluguel de motos.
 
 Você tem uma nova cobrança:
 💰 Valor: ${amount}
@@ -298,7 +298,7 @@ Após o pagamento, envie o comprovante para confirmarmos.`;
 
     let message = `Prezado(a) ${client.name},
 
-Sou a Valéria, sua assistente virtual.
+Sou a Valéria, assistente virtual da LocAuto - aluguel de motos.
 
 📋 Detalhes da cobrança:
 • Valor original: ${originalAmount}
@@ -367,7 +367,7 @@ Agradecemos a atenção e aguardamos o retorno.`;
 
     let message = `Prezado(a) ${client.name},
 
-Sou a Valéria, sua assistente virtual.
+Sou a Valéria, assistente virtual da LocAuto - aluguel de motos.
 
 Informamos que a parcela referente a ${billing.description} vence hoje (${dueDate}).
 
@@ -489,7 +489,7 @@ Agradecemos a atenção.`;
 
     let message = `Prezado(a) ${client.name},
 
-Sou a *Valéria*, sua assistente virtual do WhatsApp Business.
+Sou a Valéria, assistente virtual da LocAuto - aluguel de motos.
 
 Lembramos que a parcela referente a ${billing.description} vence em breve (${dueDate}).
 
