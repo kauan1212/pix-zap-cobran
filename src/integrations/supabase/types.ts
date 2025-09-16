@@ -67,9 +67,91 @@ export type Database = {
           },
         ]
       }
+      automatic_billing_config: {
+        Row: {
+          created_at: string
+          daily_send_time: string
+          id: string
+          is_active: boolean
+          message_template: string
+          updated_at: string
+          user_id: string
+          whatsapp_number: string
+        }
+        Insert: {
+          created_at?: string
+          daily_send_time?: string
+          id?: string
+          is_active?: boolean
+          message_template?: string
+          updated_at?: string
+          user_id: string
+          whatsapp_number: string
+        }
+        Update: {
+          created_at?: string
+          daily_send_time?: string
+          id?: string
+          is_active?: boolean
+          message_template?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
+      automatic_billing_logs: {
+        Row: {
+          billing_id: string
+          client_id: string
+          created_at: string
+          id: string
+          message_content: string
+          message_sent_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          billing_id: string
+          client_id: string
+          created_at?: string
+          id?: string
+          message_content: string
+          message_sent_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          billing_id?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          message_content?: string
+          message_sent_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automatic_billing_logs_billing_id_fkey"
+            columns: ["billing_id"]
+            isOneToOne: false
+            referencedRelation: "billings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automatic_billing_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billings: {
         Row: {
           amount: number
+          auto_billing_enabled: boolean
           auto_billing_plan_id: string | null
           client_id: string
           created_at: string
@@ -79,6 +161,9 @@ export type Database = {
           interest: number | null
           payment_date: string | null
           penalty: number | null
+          receipt_confirmed_at: string | null
+          receipt_submitted_at: string | null
+          receipt_url: string | null
           recurring_plan_id: string | null
           status: string
           updated_at: string
@@ -86,6 +171,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          auto_billing_enabled?: boolean
           auto_billing_plan_id?: string | null
           client_id: string
           created_at?: string
@@ -95,6 +181,9 @@ export type Database = {
           interest?: number | null
           payment_date?: string | null
           penalty?: number | null
+          receipt_confirmed_at?: string | null
+          receipt_submitted_at?: string | null
+          receipt_url?: string | null
           recurring_plan_id?: string | null
           status?: string
           updated_at?: string
@@ -102,6 +191,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          auto_billing_enabled?: boolean
           auto_billing_plan_id?: string | null
           client_id?: string
           created_at?: string
@@ -111,6 +201,9 @@ export type Database = {
           interest?: number | null
           payment_date?: string | null
           penalty?: number | null
+          receipt_confirmed_at?: string | null
+          receipt_submitted_at?: string | null
+          receipt_url?: string | null
           recurring_plan_id?: string | null
           status?: string
           updated_at?: string
