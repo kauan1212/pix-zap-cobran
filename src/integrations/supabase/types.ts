@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      amortization_applications: {
+        Row: {
+          amortization_id: string
+          amount_applied: number
+          billing_id: string
+          billing_remaining: number
+          created_at: string
+          id: string
+        }
+        Insert: {
+          amortization_id: string
+          amount_applied: number
+          billing_id: string
+          billing_remaining: number
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          amortization_id?: string
+          amount_applied?: number
+          billing_id?: string
+          billing_remaining?: number
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amortization_applications_amortization_id_fkey"
+            columns: ["amortization_id"]
+            isOneToOne: false
+            referencedRelation: "payment_amortizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amortization_applications_billing_id_fkey"
+            columns: ["billing_id"]
+            isOneToOne: false
+            referencedRelation: "billings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      amortization_logs: {
+        Row: {
+          action: string
+          amortization_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          amortization_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          amortization_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amortization_logs_amortization_id_fkey"
+            columns: ["amortization_id"]
+            isOneToOne: false
+            referencedRelation: "payment_amortizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auto_billing_plans: {
         Row: {
           amount: number
@@ -150,6 +227,7 @@ export type Database = {
       }
       billings: {
         Row: {
+          amortized_amount: number
           amount: number
           auto_billing_enabled: boolean
           auto_billing_plan_id: string | null
@@ -170,6 +248,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          amortized_amount?: number
           amount: number
           auto_billing_enabled?: boolean
           auto_billing_plan_id?: string | null
@@ -190,6 +269,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          amortized_amount?: number
           amount?: number
           auto_billing_enabled?: boolean
           auto_billing_plan_id?: string | null
@@ -431,6 +511,50 @@ export type Database = {
           },
         ]
       }
+      client_credits: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          source: string
+          status: string
+          used_amount: number
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          source?: string
+          status?: string
+          used_amount?: number
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          source?: string
+          status?: string
+          used_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_credits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -649,6 +773,56 @@ export type Database = {
             columns: ["condominium_id"]
             isOneToOne: false
             referencedRelation: "condominiums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_amortizations: {
+        Row: {
+          client_id: string
+          created_at: string
+          discount_applied: number
+          id: string
+          payment_amount: number
+          payment_code: string
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+          total_credit: number
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          discount_applied?: number
+          id?: string
+          payment_amount: number
+          payment_code: string
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          total_credit: number
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          discount_applied?: number
+          id?: string
+          payment_amount?: number
+          payment_code?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          total_credit?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_amortizations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -1307,16 +1481,11 @@ export type Database = {
         }
         Returns: Json
       }
-      delete_user_complete: {
-        Args: { user_email: string }
-        Returns: string
-      }
-      generate_client_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      delete_user_complete: { Args: { user_email: string }; Returns: string }
+      generate_client_token: { Args: never; Returns: string }
+      generate_payment_code: { Args: never; Returns: string }
       get_all_profiles: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           access_granted: boolean
           account_frozen: boolean
@@ -1333,7 +1502,7 @@ export type Database = {
         }[]
       }
       get_all_profiles_simple: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           access_granted: boolean
           account_frozen: boolean
@@ -1355,10 +1524,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_current_user_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_current_user_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"

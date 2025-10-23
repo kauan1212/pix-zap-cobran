@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { MotivationalPayments } from "../components/MotivationalPayments";
 import { formatDateSafely } from '@/utils/dateUtils';
+import { AmortizationPayment } from '@/components/AmortizationPayment';
 
 interface Client {
   id: string;
@@ -418,6 +419,7 @@ const ClientPortal = () => {
             <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
             <TabsTrigger value="pagas">Pagas</TabsTrigger>
             <TabsTrigger value="extras">Serviços Extras</TabsTrigger>
+            <TabsTrigger value="amortization">Amortização</TabsTrigger>
           </TabsList>
           <TabsContent value="pendentes">
             {pendingBillings.length > 0 ? (
@@ -652,6 +654,19 @@ const ClientPortal = () => {
                   <p className="text-gray-600">Você não possui serviços extras no momento.</p>
                 </CardContent>
               </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="amortization">
+            {client && (
+              <AmortizationPayment
+                clientId={client.id}
+                clientName={client.name}
+                onAmortizationCreated={() => {
+                  // Recarregar dados quando amortização for criada
+                  loadClientData();
+                }}
+              />
             )}
           </TabsContent>
         </Tabs>

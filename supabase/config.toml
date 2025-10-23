@@ -1,1 +1,16 @@
 project_id = "rpsegomkhytxhsatzgyd"
+
+[functions.calculate-amortization]
+verify_jwt = false
+
+[functions.create-amortization]
+verify_jwt = true
+
+[functions.process-amortization]
+verify_jwt = true
+
+[functions.process-overdue-billings]
+verify_jwt = false
+
+[functions.send-automatic-billing]
+verify_jwt = false
