@@ -91,34 +91,57 @@ export function AmortizationPayment({ clientId, clientName, onAmortizationCreate
 
     setGeneratingPix(true);
     try {
-      // Buscar chave PIX do usuário (dono da conta)
-      const { data: userData } = await supabase.auth.getUser();
-      
+      // Buscar informações do cliente para pegar o user_id (dono da conta)
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('user_id')
+        .eq('id', clientId)
+        .single();
+
+      if (clientError || !clientData) {
+        throw new Error('Cliente não encontrado');
+      }
+
+      // Buscar chave PIX do dono da conta (admin)
       const { data: profileData } = await supabase
         .from('profiles')
         .select('pix_key')
-        .eq('id', userData.user?.id)
+        .eq('id', clientData.user_id)
         .single();
 
-      const userPixKey = profileData?.pix_key || userData.user?.email || '';
+      const userPixKey = profileData?.pix_key || '';
+      if (!userPixKey) {
+        toast.error('Administrador não configurou chave PIX');
+        setGeneratingPix(false);
+        return;
+      }
       setPixKey(userPixKey);
+
+      // Gerar código de pagamento usando a função do banco
+      const { data: codeData, error: codeError } = await supabase
+        .rpc('generate_payment_code');
+
+      if (codeError) throw codeError;
 
       // Criar registro de amortização pendente
       const { data, error } = await supabase
         .from('payment_amortizations')
         .insert({
           client_id: clientId,
-          user_id: userData.user?.id,
+          user_id: clientData.user_id,
           payment_amount: calculation.payment_amount,
           discount_applied: calculation.discount_applied,
           total_credit: calculation.total_credit,
           status: 'pending',
-          payment_code: `AMORT-${Date.now()}`,
+          payment_code: codeData,
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao inserir:', error);
+        throw error;
+      }
 
       toast.success('Solicitação de amortização enviada! Aguarde confirmação do pagamento.');
       setShowPixInfo(true);
@@ -126,7 +149,7 @@ export function AmortizationPayment({ clientId, clientName, onAmortizationCreate
       onAmortizationCreated?.();
     } catch (error: any) {
       console.error('Erro ao criar solicitação:', error);
-      toast.error('Erro ao criar solicitação de amortização');
+      toast.error(`Erro ao criar solicitação: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setGeneratingPix(false);
     }
