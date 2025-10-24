@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { FileText, Calendar, DollarSign, MessageSquare, Copy, AlertTriangle, Clock, Receipt, Settings, BarChart3 } from 'lucide-react';
+import { FileText, Calendar, DollarSign, MessageSquare, Copy, AlertTriangle, Clock, Receipt, Settings, BarChart3, TrendingUp } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ReceiptUpload from '@/components/ReceiptUpload';
@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { formatDateSafely } from '@/utils/dateUtils';
 import { AutoBillingSettings } from './AutoBillingSettings';
 import { AutoBillingDashboard } from './AutoBillingDashboard';
+import { AmortizationManager } from './AmortizationManager';
 
 interface Client {
   id: string;
@@ -53,7 +54,7 @@ const BillingManager = ({ clients, onDataChange }: BillingManagerProps) => {
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [extraServices, setExtraServices] = useState<any[]>([]);
   const [userPixKey, setUserPixKey] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'billings' | 'automatic' | 'dashboard'>('billings');
+  const [activeTab, setActiveTab] = useState<'billings' | 'automatic' | 'dashboard' | 'amortizations'>('billings');
 
   useEffect(() => {
     if (user) {
@@ -578,6 +579,13 @@ Agradecemos a atenção.`;
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Dashboard
+              </Button>
+              <Button
+                variant={activeTab === 'amortizations' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('amortizations')}
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Amortizações
               </Button>
             </div>
           </div>
@@ -1135,6 +1143,7 @@ Agradecemos a atenção.`;
 
       {activeTab === 'automatic' && <AutoBillingSettings />}
       {activeTab === 'dashboard' && <AutoBillingDashboard />}
+      {activeTab === 'amortizations' && <AmortizationManager />}
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, TrendingUp, Info, CheckCircle2 } from 'lucide-react';
+import { Loader2, TrendingUp, Info, CheckCircle2, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { AmortizationCalculation } from '@/types/amortization';
@@ -83,39 +83,64 @@ export function AmortizationPayment({ clientId, clientName, onAmortizationCreate
     }
   };
 
-  const generatePixForAmortization = async () => {
+  const [showPixInfo, setShowPixInfo] = useState(false);
+  const [pixKey, setPixKey] = useState('');
+
+  const confirmAmortization = async () => {
     if (!calculation) return;
 
     setGeneratingPix(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-amortization', {
-        body: {
+      // Buscar chave PIX do usuário (dono da conta)
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('pix_key')
+        .eq('id', userData.user?.id)
+        .single();
+
+      const userPixKey = profileData?.pix_key || userData.user?.email || '';
+      setPixKey(userPixKey);
+
+      // Criar registro de amortização pendente
+      const { data, error } = await supabase
+        .from('payment_amortizations')
+        .insert({
           client_id: clientId,
+          user_id: userData.user?.id,
           payment_amount: calculation.payment_amount,
-          calculation: calculation,
-        },
-      });
+          discount_applied: calculation.discount_applied,
+          total_credit: calculation.total_credit,
+          status: 'pending',
+          payment_code: `AMORT-${Date.now()}`,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      if (data.error) {
-        toast.error(data.error);
-        return;
-      }
-
-      toast.success('Código de amortização gerado! Use o código: ' + data.payment_code);
-      
-      // Resetar formulário
-      setPaymentAmount('');
-      setCalculation(null);
+      toast.success('Solicitação de amortização enviada! Aguarde confirmação do pagamento.');
+      setShowPixInfo(true);
       
       onAmortizationCreated?.();
     } catch (error: any) {
-      console.error('Erro ao gerar código:', error);
-      toast.error('Erro ao gerar código de amortização');
+      console.error('Erro ao criar solicitação:', error);
+      toast.error('Erro ao criar solicitação de amortização');
     } finally {
       setGeneratingPix(false);
     }
+  };
+
+  const copyPixKey = () => {
+    navigator.clipboard.writeText(pixKey);
+    toast.success('Chave PIX copiada!');
+  };
+
+  const resetForm = () => {
+    setPaymentAmount('');
+    setCalculation(null);
+    setShowPixInfo(false);
   };
 
   const amount = parseCurrency(paymentAmount);
@@ -277,21 +302,68 @@ export function AmortizationPayment({ clientId, clientName, onAmortizationCreate
               </Alert>
             )}
 
-            <Button
-              onClick={generatePixForAmortization}
-              disabled={generatingPix}
-              className="w-full"
-              size="lg"
-            >
-              {generatingPix ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Gerando...
-                </>
-              ) : (
-                'Confirmar e Gerar Código de Pagamento'
-              )}
-            </Button>
+            {!showPixInfo ? (
+              <Button
+                onClick={confirmAmortization}
+                disabled={generatingPix}
+                className="w-full"
+                size="lg"
+              >
+                {generatingPix ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  'Confirmar Simulação e Ver Chave PIX'
+                )}
+              </Button>
+            ) : (
+              <div className="space-y-4">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p className="font-medium">Instruções para pagamento:</p>
+                      <ol className="list-decimal list-inside space-y-1 text-sm">
+                        <li>Copie a chave PIX abaixo</li>
+                        <li>Faça o pagamento de <strong>{formatCurrency(calculation.payment_amount)}</strong></li>
+                        <li>Aguarde a confirmação do administrador</li>
+                      </ol>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+
+                <Card className="bg-primary/5 border-primary">
+                  <CardContent className="p-6 space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Valor a pagar:</p>
+                      <p className="text-3xl font-bold text-primary">
+                        {formatCurrency(calculation.payment_amount)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Chave PIX:</p>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={pixKey}
+                          readOnly
+                          className="font-mono text-sm"
+                        />
+                        <Button onClick={copyPixKey} size="icon">
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Button onClick={resetForm} variant="outline" className="w-full">
+                  Nova Simulação
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
