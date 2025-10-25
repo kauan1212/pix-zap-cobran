@@ -77,7 +77,7 @@ serve(async (req) => {
       .select('*')
       .eq('client_id', amortization.client_id)
       .in('status', ['pending', 'overdue'])
-      .order('due_date', { ascending: true });
+      .order('due_date', { ascending: false });
 
     if (billingsError) {
       console.error('Erro ao buscar cobranças:', billingsError);

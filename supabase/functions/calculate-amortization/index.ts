@@ -59,13 +59,13 @@ serve(async (req) => {
     const discount_applied = has_discount ? payment_amount * 0.1 : 0;
     const total_credit = payment_amount + discount_applied;
 
-    // Buscar cobranças pendentes ordenadas da mais antiga para mais recente
+    // Buscar cobranças pendentes ordenadas da mais recente para mais antiga
     const { data: billings, error: billingsError } = await supabase
       .from('billings')
       .select('id, description, due_date, amount, amortized_amount, status')
       .eq('client_id', client_id)
       .in('status', ['pending', 'overdue'])
-      .order('due_date', { ascending: true });
+      .order('due_date', { ascending: false });
 
     if (billingsError) {
       console.error('Erro ao buscar cobranças:', billingsError);

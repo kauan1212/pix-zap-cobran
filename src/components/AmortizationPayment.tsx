@@ -143,8 +143,11 @@ export function AmortizationPayment({ clientId, clientName, onAmortizationCreate
         throw error;
       }
 
-      toast.success('Solicitação de amortização enviada! Aguarde confirmação do pagamento.');
       setShowPixInfo(true);
+      
+      // Copiar chave PIX automaticamente
+      await navigator.clipboard.writeText(userPixKey);
+      toast.success('Chave PIX copiada automaticamente!');
       
       onAmortizationCreated?.();
     } catch (error: any) {
@@ -338,7 +341,7 @@ export function AmortizationPayment({ clientId, clientName, onAmortizationCreate
                     Processando...
                   </>
                 ) : (
-                  'Confirmar Simulação e Ver Chave PIX'
+                  'Confirmar e Copiar Chave PIX'
                 )}
               </Button>
             ) : (
