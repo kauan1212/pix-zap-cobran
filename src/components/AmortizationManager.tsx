@@ -62,12 +62,12 @@ export function AmortizationManager() {
     }
   };
 
-  const confirmPayment = async (amortizationId: string) => {
+  const confirmPayment = async (amortizationId: string, paymentCode: string) => {
     setProcessing(amortizationId);
     try {
       const { data, error } = await supabase.functions.invoke('process-amortization', {
         body: {
-          amortization_id: amortizationId,
+          payment_code: paymentCode,
         },
       });
 
@@ -193,7 +193,7 @@ export function AmortizationManager() {
 
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => confirmPayment(amortization.id)}
+                        onClick={() => confirmPayment(amortization.id, amortization.payment_code)}
                         disabled={processing === amortization.id}
                         className="flex-1"
                       >
